@@ -9,8 +9,8 @@ include("../src/DynamicsModels/RocketDynamics.jl")
 # using ..DynamicsModels.RocketDynamics
 
 # Load parameters from the config file
-config_path = joinpath(@__DIR__, "..", "config.yaml")
-params = load_parameters(config_path)
+config_path = joinpath(@__DIR__, "..", "src\\config.yaml")
+params = Parameters.load_parameters(config_path)
 
 # Create an instance of the RocketDynamics model
 dynamics_model = RocketDynamics(params)
