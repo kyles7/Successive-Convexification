@@ -1,9 +1,8 @@
 module RocketDynamics
 
 include("AbstractDynamicsModel.jl")
-using .AbstractDynamicsModel
 include("../Utilities/Parameters.jl")
-using .Utilities.Parameters
+
 export RocketDynamics, dynamics, state_jacobian, control_jacobian, initialize_trajectory
 
 struct RocketDynamics3dof <: AbstractDynamicsModel.DynamicsModel
