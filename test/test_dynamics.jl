@@ -4,10 +4,8 @@ using Test
 using YAML
 
 include("../src/Utilities/Parameters.jl")
-using .Parameters
+include("../src/DynamicsModels/AbstractDynamicsModel.jl")
 include("../src/DynamicsModels/RocketDynamics.jl")
-using .DynamicsModels.RocketDynamics
-# using ..Utilities.Parameters
 # using ..DynamicsModels.RocketDynamics
 
 # Load parameters from the config file

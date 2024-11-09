@@ -1,10 +1,12 @@
 module RocketDynamics
 
-using ..AbstractDynamicsModel
-
+include("AbstractDynamicsModel.jl")
+using .AbstractDynamicsModel
+include("../Utilities/Parameters.jl")
+using .Utilities.Parameters
 export RocketDynamics, dynamics, state_jacobian, control_jacobian, initialize_trajectory
 
-struct RocketDynamics <: AbstractDynamicsModel.DynamicsModel
+struct RocketDynamics3dof <: AbstractDynamicsModel.DynamicsModel
     params::Dict
 end
 
@@ -16,7 +18,7 @@ Compute the dynamics of the rocket.
 # Returns
 - `dx::Vector`: Derivative of the state vector.
 """
-function dynamics(model::RocketDynamics, x::Vector, u::Vector, params::Dict)
+function dynamics(model::RocketDynamics3dof, x::Vector, u::Vector, params::Dict)
     # Extract state variables
     px, py, vx, vy, m = x
     # Extract control inputs
@@ -38,7 +40,7 @@ end
 
 Compute the state Jacobian ∂f/∂x for the rocket dynamics.
 """
-function state_jacobian(model::RocketDynamics, x::Vector, u::Vector, params::Dict)
+function state_jacobian(model::RocketDynamics3dof, x::Vector, u::Vector, params::Dict)
     # Initialize Jacobian matrix
     n_states = length(x)
     A = zeros(n_states, n_states)
@@ -64,7 +66,7 @@ end
 
 Compute the control Jacobian ∂f/∂u for the rocket dynamics.
 """
-function control_jacobian(model::RocketDynamics, x::Vector, u::Vector, params::Dict)
+function control_jacobian(model::RocketDynamics3dof, x::Vector, u::Vector, params::Dict)
     n_states = length(x)
     n_controls = length(u)
     B = zeros(n_states, n_controls)
@@ -96,7 +98,7 @@ end
 
 Initialize the state and control trajectories for the rocket dynamics model.
 """
-function initialize_trajectory(model::RocketDynamics, params::Dict)
+function initialize_trajectory(model::RocketDynamics3dof, params::Dict)
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
