@@ -1,0 +1,30 @@
+# Simulation Parameters
+N: 100                   # Number of time steps
+dt: 0.1                  # Time step duration (seconds)
+
+# System Parameters
+n_states: 5              # Number of state variables
+n_controls: 2            # Number of control variables
+gravity: 9.81            # Gravitational acceleration (m/s^2)
+I_sp: 300                # Specific impulse (seconds)
+
+# Initial Conditions
+x0:
+  - 0.0                  # Initial position x (m)
+  - 1000.0               # Initial position y (m)
+  - 0.0                  # Initial velocity x (m/s)
+  - -50.0                # Initial velocity y (m/s)
+  - 5000.0               # Initial mass (kg)
+
+# Control Input Guess
+u_guess:
+  - 0.0                  # Initial thrust x component (N)
+  - 49050.0              # Initial thrust y component (N)
+
+# Target Conditions (Optional)
+x_target:
+  - 0.0                  # Target position x (m)
+  - 0.0                  # Target position y (m)
+  - 0.0                  # Target velocity x (m/s)
+  - 0.0                  # Target velocity y (m/s)
+  - 4500.0               # Target mass (kg)
