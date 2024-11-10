@@ -25,4 +25,17 @@ dynamics_model = RocketDynamics_6dof(params)
     @test length(dx) == params["n_states"]
 
     println("dx = ", dx)
+
+    # Test quaternion to rotation matrix
+    q0, q1, q2, q3 = x_test[7:10]
+    R = quaternion_to_rotation_matrix(q0, q1, q2, q3)
+    println("R = ", R)
+
+    # Test the state Jacobian
+    # println("Testing state Jacobian...")
+    # A = state_jacobian(dynamics_model, x_test, u_test, params)
+    # # @test size(A) == (params["n_states"], params["n_states"])
+    
+    # # Print the state Jacobian
+    # println("A = ", A)
 end
