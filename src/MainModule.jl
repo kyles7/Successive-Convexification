@@ -9,7 +9,7 @@ module MainModule
     ######## use this block for test_6dofdynamics #######
     include("Utilities/Parameters.jl")
     include("DynamicsModels/RocketDynamics6dof.jl")  # use this for test_6dofdynamics
-    using .Parameters, .RocketDynamics
+    using .Parameters, .RocketDynamics6dof
     export Parameters, RocketDynamics_6dof, dynamics, state_jacobian, control_jacobian, initialize_trajectory
 
 #   include("Utilities/Parameters.jl")  

@@ -10,7 +10,7 @@ using .MainModule
 
 # Load parameters
 config_path = joinpath(@__DIR__, "..", "configs", "config6dof.yaml")
-params = load_parameters(config_path)
+params = Parameters.load_parameters(config_path)
 
 # Create dynamics model instance
 dynamics_model = RocketDynamics_6dof(params)
