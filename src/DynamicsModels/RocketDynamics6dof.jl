@@ -2,6 +2,7 @@ module RocketDynamics
 
 include("AbstractDynamicsModel.jl")
 include("../Utilities/Parameters.jl")
+using LinearAlgebra
 
 export RocketDynamics_6dof, dynamics, state_jacobian, control_jacobian, initialize_trajectory
 
@@ -32,7 +33,7 @@ function dynamics(model::RocketDynamics_6dof, x::Vector{Float64}, u::Vector{Floa
     g_inertial = params["gravity_vector"]  # Gravitational acceleration vector [gx, gy, gz]
     g0 = params["standard_gravity"]        # Standard gravity (9.80665 m/s²)
     I_sp = params["I_sp"]                  # Specific impulse (s)
-    I_body = params["inertia_matrix"]      # Inertia matrix in body frame (3x3)
+    I_body = I_body = hcat(params["inertia_matrix"]...)    # Inertia matrix in body frame (3x3)
 
     # Normalize quaternion to avoid drift
     q_norm = sqrt(q0^2 + q1^2 + q2^2 + q3^2)
