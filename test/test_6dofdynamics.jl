@@ -32,10 +32,10 @@ dynamics_model = RocketDynamics_6dof(params)
     println("R = ", R)
 
     # Test the state Jacobian
-    # println("Testing state Jacobian...")
-    # A = state_jacobian(dynamics_model, x_test, u_test, params)
+    println("Testing state Jacobian...")
+    A = state_jacobian(dynamics_model, x_test, u_test, params)
     # # @test size(A) == (params["n_states"], params["n_states"])
     
     # # Print the state Jacobian
-    # println("A = ", A)
+    println("A = ", A)
 end

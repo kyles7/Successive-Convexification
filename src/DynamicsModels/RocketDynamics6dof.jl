@@ -89,12 +89,12 @@ function quaternion_product(q::Vector{Float64}, p::Vector{Float64}) :: Vector{Fl
 end
 
 function state_jacobian(model::RocketDynamics_6dof, x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
-    A = ForwardDiff.jacobian(x -> dynamics(model, x, u, params), x)
+    A = ForwardDiff.jacobian(x_state -> dynamics(model,x , u, params), x)
     return A
 end
 
 function control_jacobian(model::RocketDynamics_6dof, x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
-    B = ForwardDiff.jacobian(u -> dynamics(model, x, u, params), u)
+    B = ForwardDiff.jacobian(x_state -> dynamics(model, x, u, params), u)
     return B
 end
 
