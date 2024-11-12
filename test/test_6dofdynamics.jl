@@ -34,8 +34,14 @@ dynamics_model = RocketDynamics_6dof(params)
     # Test the state Jacobian
     println("Testing state Jacobian...")
     A = state_jacobian(dynamics_model, x_test, u_test, params)
-    # # @test size(A) == (params["n_states"], params["n_states"])
-    
+    @test size(A) == (params["n_states"], params["n_states"])
     # # Print the state Jacobian
     println("A = ", A)
+
+    # Test the control Jacobian
+    println("Testing control Jacobian...")
+    B = control_jacobian(dynamics_model, x_test, u_test, params)
+    @test size(B) == (params["n_states"], params["n_controls"])
+    # # Print the control Jacobian
+    println("B = ", B)
 end
