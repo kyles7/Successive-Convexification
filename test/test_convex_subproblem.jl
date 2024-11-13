@@ -4,22 +4,24 @@
 cd(@__DIR__)
 
 # Include necessary modules
-include("../src/Utilities/Parameters.jl")
-include("../src/DynamicsModels/AbstractDynamicsModel.jl")
-include("../src/DynamicsModels/RocketDynamics.jl")
-include("../src/Utilities/Linearization.jl")
-include("../src/Optimization/ConvexSubproblemSolver.jl")
-
-using .Parameters
-using .AbstractDynamicsModel
-using .RocketDynamics
-using .Linearization
-using .ConvexSubproblemSolver
+# include("../src/Utilities/Parameters.jl")
+# include("../src/DynamicsModels/AbstractDynamicsModel.jl")
+# include("../src/DynamicsModels/RocketDynamics.jl")
+# include("../src/Utilities/Linearization.jl")
+# include("../src/Optimization/ConvexSubproblemSolver.jl")
+include("../src/MainModule.jl")
+using .MainModule
+using LinearAlgebra
+# using .Parameters
+# using .AbstractDynamicsModel
+# using .RocketDynamics
+# using .Linearization
+# using .ConvexSubproblemSolver
 using Test
 
 # Load parameters
-config_path = joinpath(@__DIR__, "..", "configs", "config.yaml")
-params = load_parameters(config_path)
+config_path = joinpath(@__DIR__, "..", "configs", "config6dof.yaml")
+params = Parameters.load_parameters(config_path)
 
 # Set additional parameters
 params["Q"] = Diagonal(repeat([1.0], params["n_states"]))
@@ -35,7 +37,9 @@ params["u_min"] = [-F_max, -F_max, -F_max, -M_max, -M_max, -M_max]
 params["u_max"] = [F_max, F_max, F_max, M_max, M_max, M_max]
 
 # Create dynamics model instance
-dynamics_model = RocketDynamics(params)
+dynamics_model = RocketDynamics_6dof(params)
+# print the type of dynamics_model
+println(typeof(dynamics_model))
 params["dynamics_model"] = dynamics_model
 
 # Initialize reference trajectories
@@ -55,8 +59,8 @@ q_norm = sqrt(sum(xk[7:10].^2))
 xk[7:10] /= q_norm
 
 # Compute Jacobians using the linearization module
-A_list = []
-B_list = []
+A_list = Matrix{Float64}[]
+B_list = Matrix{Float64}[]
 for k in 1:params["N"] - 1
     xk = x_ref[k, :]
     uk = u_ref[k, :]

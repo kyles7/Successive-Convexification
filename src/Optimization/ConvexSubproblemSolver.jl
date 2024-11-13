@@ -5,7 +5,9 @@ export solve_convex_subproblem
 using JuMP
 using Gurobi
 using LinearAlgebra
-using ..AbstractDynamicsModel
+#using ..AbstractDynamicsModel
+include("../DynamicsModels/AbstractDynamicsModel.jl")
+using .AbstractDynamicsModel
 
 """
     solve_convex_subproblem(A_list, B_list, x_ref, u_ref, params) -> (Array, Array)
@@ -107,5 +109,6 @@ function dynamics_residual(dynamics_model::AbstractDynamicsModel.DynamicsModel, 
     residual = f - A * xk - B * uk
     return residual
 end
+
 
 end # module ConvexSubproblemSolver
