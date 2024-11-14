@@ -8,9 +8,11 @@ module MainModule
 
     ######## use this block for test_6dofdynamics #######
     include("Utilities/Parameters.jl")
+    include("DynamicsModels/RocketDynamics3dof.jl")  # use this for test_dynamics
     include("DynamicsModels/RocketDynamics6dof.jl")  # use this for test_6dofdynamics
-    using .Parameters, .RocketDynamics6dof
-    export Parameters, RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix
+    include("Optimization/ConvexSubproblemSolver.jl")
+    using .Parameters, .RocketDynamics6dof, .RocketDynamics3dof, .ConvexSubproblemSolver
+    export Parameters, RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, RocketDynamics_3dof, dynamics3dof, state_jacobian3dof, control_jacobian3dof, initialize_trajectory3dof, solve_convex_subproblem
 
     ######## use this block for test_convex_subproblems #######
 #     include("Utilities/Parameters.jl")

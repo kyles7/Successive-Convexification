@@ -5,9 +5,11 @@ export solve_convex_subproblem
 using JuMP
 using Gurobi
 using LinearAlgebra
+using ..MainModule
+using ForwardDiff
 #using ..AbstractDynamicsModel
-include("../DynamicsModels/AbstractDynamicsModel.jl")
-using .AbstractDynamicsModel
+# include("../DynamicsModels/AbstractDynamicsModel.jl")
+# using .AbstractDynamicsModel
 
 """
     solve_convex_subproblem(A_list, B_list, x_ref, u_ref, params) -> (Array, Array)
@@ -103,9 +105,9 @@ end
 
 # Helper function to compute the dynamics residual
 function dynamics_residual(dynamics_model, xk::Vector{Float64}, uk::Vector{Float64}, params::Dict) :: Vector{Float64}
-    f = dynamics(dynamics_model, xk, uk, params)
-    A = ForwardDiff.jacobian(x -> dynamics(dynamics_model, x, uk, params), xk)
-    B = ForwardDiff.jacobian(u -> dynamics(dynamics_model, xk, u, params), uk)
+    f = dynamics6dof(xk, uk, params)
+    A = ForwardDiff.jacobian(x -> dynamics6dof(x, uk, params), xk)
+    B = ForwardDiff.jacobian(u -> dynamics6dof(xk, u, params), uk)
     residual = f - A * xk - B * uk
     return residual
 end
