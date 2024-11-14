@@ -1,17 +1,15 @@
-module RocketDynamics
+module RocketDynamics6dof
 
-include("AbstractDynamicsModel.jl")
-include("../Utilities/Parameters.jl")
 using LinearAlgebra
 using ForwardDiff
 
-export RocketDynamics_6dof, dynamics, state_jacobian, control_jacobian, initialize_trajectory, quaternion_to_rotation_matrix
+export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix
 
-struct RocketDynamics_6dof <: AbstractDynamicsModel.DynamicsModel
+struct RocketDynamics_6dof 
     params::Dict
 end
 
-function dynamics(model::RocketDynamics_6dof, x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Vector{Float64}
+function dynamics6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Vector{Float64}
     # Extract state variables
     # Position in inertial frame
     rx, ry, rz = x[1:3]
@@ -88,17 +86,17 @@ function quaternion_product(q::Vector{Float64}, p::Vector{Float64}) :: Vector{Fl
     return [s, x, y, z]
 end
 
-function state_jacobian(model::RocketDynamics_6dof, x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
-    A = ForwardDiff.jacobian(x_state -> dynamics(model,x , u, params), x)
+function state_jacobian6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
+    A = ForwardDiff.jacobian(x_state -> dynamics6dof(x , u, params), x)
     return A
 end
 
-function control_jacobian(model::RocketDynamics_6dof, x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
-    B = ForwardDiff.jacobian(x_state -> dynamics(model, x, u, params), u)
+function control_jacobian6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
+    B = ForwardDiff.jacobian(x_state -> dynamics6dof(x, u, params), u)
     return B
 end
 
-function initialize_trajectory(model::RocketDynamics_6dof, params::Dict) :: Tuple{Array{Float64,2}, Array{Float64,2}}
+function initialize_trajectory6dof(params::Dict) :: Tuple{Array{Float64,2}, Array{Float64,2}}
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
@@ -112,7 +110,7 @@ function initialize_trajectory(model::RocketDynamics_6dof, params::Dict) :: Tupl
     for k in 1:N-1
         xk = x_init[k, :]
         uk = params["u_guess"]
-        dx = dynamics(model, xk, uk, params)
+        dx = dynamics6dof(xk, uk, params)
         x_init[k+1, :] = xk + params["dt"] * dx
         u_init[k, :] = uk
     end

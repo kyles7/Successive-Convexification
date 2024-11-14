@@ -102,7 +102,7 @@ function solve_convex_subproblem(A_list::Vector{Matrix{Float64}}, B_list::Vector
 end
 
 # Helper function to compute the dynamics residual
-function dynamics_residual(dynamics_model::AbstractDynamicsModel.DynamicsModel, xk::Vector{Float64}, uk::Vector{Float64}, params::Dict) :: Vector{Float64}
+function dynamics_residual(dynamics_model, xk::Vector{Float64}, uk::Vector{Float64}, params::Dict) :: Vector{Float64}
     f = dynamics(dynamics_model, xk, uk, params)
     A = ForwardDiff.jacobian(x -> dynamics(dynamics_model, x, uk, params), xk)
     B = ForwardDiff.jacobian(u -> dynamics(dynamics_model, xk, u, params), uk)
