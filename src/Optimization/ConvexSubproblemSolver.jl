@@ -106,6 +106,7 @@ end
 # Helper function to compute the dynamics residual
 function dynamics_residual(xk::AbstractVector, uk::AbstractVector, params::Dict) :: AbstractVector
     f = dynamics6dof(xk, uk, params)
+    # TODO: replace forward diffs with jacobian functions
     A = ForwardDiff.jacobian(x_state -> dynamics6dof(x_state, uk, params), xk)
     B = ForwardDiff.jacobian(u_state -> dynamics6dof(xk, u_state, params), uk)
     residual = f - A * xk - B * uk
