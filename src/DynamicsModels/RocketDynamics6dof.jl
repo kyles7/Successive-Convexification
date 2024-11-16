@@ -9,7 +9,7 @@ struct RocketDynamics_6dof
     params::Dict
 end
 
-function dynamics6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Vector{Float64}
+function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: AbstractVector{Real}
     # Extract state variables
     # Position in inertial frame
     rx, ry, rz = x[1:3]
@@ -66,17 +66,22 @@ function dynamics6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: V
 end
 
 # Quaternion to rotation matrix
-function quaternion_to_rotation_matrix(q0, q1, q2, q3) :: Matrix{Float64}
-    R = [
-        q0^2 + q1^2 - q2^2 - q3^2 2*(q1*q2 - q0*q3) 2*(q1*q3 + q0*q2);
-        2*(q1*q2 + q0*q3) q0^2 - q1^2 + q2^2 - q3^2 2*(q2*q3 - q0*q1);
-        2*(q1*q3 - q0*q2) 2*(q2*q3 + q0*q1) q0^2 - q1^2 - q2^2 + q3^2
-    ]
+function quaternion_to_rotation_matrix(q0::T, q1::T, q2::T, q3::T) :: AbstractMatrix{T} where T <: Real
+    R = zeros(T, 3, 3)  # Generic matrix with type T
+    R[1, 1] = 1 - 2 * (q2^2 + q3^2)
+    R[1, 2] = 2 * (q1 * q2 - q3 * q0)
+    R[1, 3] = 2 * (q1 * q3 + q2 * q0)
+    R[2, 1] = 2 * (q1 * q2 + q3 * q0)
+    R[2, 2] = 1 - 2 * (q1^2 + q3^2)
+    R[2, 3] = 2 * (q2 * q3 - q1 * q0)
+    R[3, 1] = 2 * (q1 * q3 - q2 * q0)
+    R[3, 2] = 2 * (q2 * q3 + q1 * q0)
+    R[3, 3] = 1 - 2 * (q1^2 + q2^2)
     return R
 end
 
 # Quaternion product
-function quaternion_product(q::Vector{Float64}, p::Vector{Float64}) :: Vector{Float64}
+function quaternion_product(q::AbstractVector{T}, p::AbstractVector{T}) :: AbstractVector{T} where T <: Real
     q0, q1, q2, q3 = q
     p0, p1, p2, p3 = p
     s = q0 * p0 - q1 * p1 - q2 * p2 - q3 * p3
@@ -86,17 +91,18 @@ function quaternion_product(q::Vector{Float64}, p::Vector{Float64}) :: Vector{Fl
     return [s, x, y, z]
 end
 
-function state_jacobian6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
-    A = ForwardDiff.jacobian(x_state -> dynamics6dof(x , u, params), x)
+
+function state_jacobian6dof(x::AbstractVector{T}, u::AbstractVector{T}, params::Dict) :: AbstractMatrix{T} where T <: Real
+    A = ForwardDiff.jacobian(x_state -> dynamics6dof(x_state, u, params), x)
     return A
 end
 
-function control_jacobian6dof(x::Vector{Float64}, u::Vector{Float64}, params::Dict) :: Matrix{Float64}
-    B = ForwardDiff.jacobian(x_state -> dynamics6dof(x, u, params), u)
+function control_jacobian6dof(x::AbstractVector{T}, u::AbstractVector{T}, params::Dict) :: AbstractMatrix{T} where T <: Real
+    B = ForwardDiff.jacobian(u_state -> dynamics6dof(x, u_state, params), u)
     return B
 end
 
-function initialize_trajectory6dof(params::Dict) :: Tuple{Array{Float64,2}, Array{Float64,2}}
+function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2}, AbstractArray{Real,2}}
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]

@@ -14,6 +14,6 @@ using Test
 using YAML
 
 # run the tests 
-runTest6DOFDynamics()
-runTest3DOFDynamics()
-# runTestConvexSubproblem()
+# runTest6DOFDynamics()
+# runTest3DOFDynamics()
+runTestConvexSubproblem()

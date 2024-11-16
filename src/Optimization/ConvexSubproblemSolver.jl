@@ -26,7 +26,7 @@ Solves the convex subproblem in the Scvx algorithm using Gurobi.
 # Returns
 - `(x_opt::Array, u_opt::Array)`: Optimized state and control trajectories.
 """
-function solve_convex_subproblem(A_list::Vector{Matrix{Float64}}, B_list::Vector{Matrix{Float64}}, x_ref::Array{Float64,2}, u_ref::Array{Float64,2}, params::Dict)
+function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vector{<:AbstractMatrix}, x_ref::AbstractArray, u_ref::AbstractArray, params::Dict)
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
@@ -56,7 +56,7 @@ function solve_convex_subproblem(A_list::Vector{Matrix{Float64}}, B_list::Vector
         B = B_list[k]
         xk_ref = x_ref[k, :]
         uk_ref = u_ref[k, :]
-        fk = dynamics_residual(params["dynamics_model"], xk_ref, uk_ref, params)
+        fk = dynamics_residual(xk_ref, uk_ref, params)
 
         @constraint(model, x[k+1, :] .== x[k, :] + dt * (A * (x[k, :] - xk_ref) + B * (u[k, :] - uk_ref) + fk))
     end
@@ -104,10 +104,10 @@ function solve_convex_subproblem(A_list::Vector{Matrix{Float64}}, B_list::Vector
 end
 
 # Helper function to compute the dynamics residual
-function dynamics_residual(dynamics_model, xk::Vector{Float64}, uk::Vector{Float64}, params::Dict) :: Vector{Float64}
+function dynamics_residual(xk::AbstractVector, uk::AbstractVector, params::Dict) :: AbstractVector
     f = dynamics6dof(xk, uk, params)
-    A = ForwardDiff.jacobian(x -> dynamics6dof(x, uk, params), xk)
-    B = ForwardDiff.jacobian(u -> dynamics6dof(xk, u, params), uk)
+    A = ForwardDiff.jacobian(x_state -> dynamics6dof(x_state, uk, params), xk)
+    B = ForwardDiff.jacobian(u_state -> dynamics6dof(xk, u_state, params), uk)
     residual = f - A * xk - B * uk
     return residual
 end

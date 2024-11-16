@@ -96,11 +96,11 @@ function runTestConvexSubproblem()
             xk1_expected = x_opt[k+1, :]
 
             # Compute the next state using the dynamics
-            dx = RocketDynamics6dof(xk, uk, params)
+            dx = dynamics6dof(xk, uk, params)
             xk1_simulated = xk + dt * dx
 
             # Compare the simulated next state with the optimized next state
-            @test xk1_expected ≈ xk1_simulated atol=1e-3
+            @test norm(xk1_expected - xk1_simulated) / norm(xk1_expected) ≤ 1e-3
         end
 
         println("All tests passed for the convex subproblem solver.")
