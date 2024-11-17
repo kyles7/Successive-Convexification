@@ -28,6 +28,8 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     # Thrust moment in body frame
     Mbx, Mby, Mbz = u[4:6]
 
+    #TODO: switch control vector to T
+
     # Parameters
     g_inertial = params["gravity_vector"]  # Gravitational acceleration vector [gx, gy, gz]
     g0 = params["standard_gravity"]        # Standard gravity (9.80665 m/s²)
