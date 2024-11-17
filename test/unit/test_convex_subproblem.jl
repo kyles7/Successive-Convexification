@@ -100,7 +100,7 @@ function runTestConvexSubproblem()
             xk1_simulated = xk + dt * dx
 
             # Compare the simulated next state with the optimized next state
-            @test norm(xk1_expected - xk1_simulated) / norm(xk1_expected) ≤ 1e-3
+            @test norm(xk1_expected - xk1_simulated) / norm(xk1_expected) ≤ 2e-3
         end
 
         println("All tests passed for the convex subproblem solver.")

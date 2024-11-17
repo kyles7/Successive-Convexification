@@ -38,3 +38,7 @@ u_guess:
   - 0.0        # Moment Mx
   - 0.0        # Moment My
   - 0.0        # Moment Mz
+
+# dry mass
+m_dry: 1000.0
+mass_index: 14

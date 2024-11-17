@@ -31,6 +31,7 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
     n_states = params["n_states"]
     n_controls = params["n_controls"]
     dt = params["dt"]
+    m_dry = params["m_dry"]
 
     # Extract weighting matrices for the objective function
     Q = params["Q"]        # State weighting matrix
@@ -79,7 +80,11 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
     end
 
     # State constraints (if any)
-    # Implement as per problem requirements
+    # mass constraint - mass must stay above dry mass
+    mass_index = params["mass_index"]
+    @constraint(model, [k=1:N], x[k, mass_index] >= 0)  # Altitude constraint
+    #TODO: implement thrust constraint
+    #TODO: implement tilt constraint
 
     # Solve the optimization problem
     optimize!(model)
@@ -107,8 +112,10 @@ end
 function dynamics_residual(xk::AbstractVector, uk::AbstractVector, params::Dict) :: AbstractVector
     f = dynamics6dof(xk, uk, params)
     # TODO: replace forward diffs with jacobian functions
-    A = ForwardDiff.jacobian(x_state -> dynamics6dof(x_state, uk, params), xk)
-    B = ForwardDiff.jacobian(u_state -> dynamics6dof(xk, u_state, params), uk)
+    # A = ForwardDiff.jacobian(x_state -> dynamics6dof(x_state, uk, params), xk)
+    # B = ForwardDiff.jacobian(u_state -> dynamics6dof(xk, u_state, params), uk)
+    A = state_jacobian6dof(xk, uk, params)
+    B = control_jacobian6dof(xk, uk, params)
     residual = f - A * xk - B * uk
     return residual
 end
