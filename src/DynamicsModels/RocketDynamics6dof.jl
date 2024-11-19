@@ -2,8 +2,9 @@ module RocketDynamics6dof
 
 using LinearAlgebra
 using ForwardDiff
+using DifferentialEquations
 
-export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix
+export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization
 
 struct RocketDynamics_6dof 
     params::Dict
@@ -112,23 +113,24 @@ function control_jacobian6dof(x::AbstractVector{T}, u::AbstractVector{T}, params
     return B
 end
 
+# TODO: use same initial guess as in paper
 function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2}, AbstractArray{Real,2}}
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
 
     x_init = zeros(N, n_states)
-    u_init = zeros(N - 1, n_controls)
+    u_init = zeros(N, n_controls)
 
     x_init[1, :] = params["x0"]
-
+    u_init[1, :] = params["u_guess"]
     # Simple initial guess for control inputs
     for k in 1:N-1
         xk = x_init[k, :]
         uk = params["u_guess"]
         dx = dynamics6dof(xk, uk, params)
         x_init[k+1, :] = xk + params["dt"] * dx
-        u_init[k, :] = uk
+        u_init[k+1, :] = uk
     end
 
     return x_init, u_init
@@ -165,5 +167,118 @@ function skew_symmetric4d(v::AbstractVector{T}) :: AbstractMatrix{T} where T <: 
     return S
 end
 
+function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, sigma, params::Dict) :: Tuple{AbstractMatrix{T}, AbstractMatrix{T}, AbstractMatrix{T}, AbstractMatrix{T}, AbstractMatrix{T}} where T <: Real
+   """
+    Calculate discretization for given states, inputs, and total time.
+
+    :param X: Matrix of states for all time points (n_x x K)
+    :param U: Matrix of inputs for all time points (n_u x K)
+    :param sigma: Total time
+    :param params: Parameters dictionary
+    :return: Discretization matrices A_bar, B_bar, C_bar, S_bar, z_bar
+    """
+    K = size(X, 2)
+    n_x = size(X, 1)
+    n_u = size(U, 1)
+    dt = sigma / (K - 1)
+
+    #preallocate matrices
+    A_bar = zeros(n_x * n_x, K-1)
+    B_bar = zeros(n_x * n_u, K-1)
+    C_bar = zeros(n_x * n_u, K-1)
+    S_bar = zeros(n_x, K-1)
+    z_bar = zeros(n_x, K-1)
+
+    #indices for augmented state vec V
+    x_index = 1:n_x
+    A_bar_indices = maximum(x_index) + 1:maximum(x_index) + n_x * n_x #??
+    B_bar_indices = maximum(A_bar_indices) + 1:maximum(A_bar_indices) + n_x * n_u
+    C_bar_indices = maximum(B_bar_indices) + 1:maximum(B_bar_indices) + n_x * n_u
+    S_bar_indices = maximum(C_bar_indices) + 1:maximum(C_bar_indices) + n_x
+    z_bar_indices = maximum(S_bar_indices) + 1:maximum(S_bar_indices) + n_x
+
+    V0_length = maximum(z_bar_indices)
+
+    #preallocate augmented state vec V
+    V0 = zeros(V0_length)
+
+    for k in 1:K-1
+        #set initial augmented state
+        V0[x_index] = zeros(n_x)
+
+        # initialize phi as identity matrix
+        V0[A_bar_indices] = vec(Matrix{Float64}(I, n_x, n_x))
+        V0[B_bar_indices] .= 0
+        V0[C_bar_indices] .= 0
+        V0[S_bar_indices] .= 0
+        V0[z_bar_indices] .= 0
+
+        # define ODE function
+        # inputs vector to store derivatives, current state vec, params, current time
+        function f!(dVdt, V, p, t)
+            # extract variables from V
+            xk = V[x_index]
+            Phi = reshape(V[A_bar_indices], n_x, n_x)
+            B_bar_V = reshape(V[B_bar_indices], n_x, n_u)
+            C_bar_V = reshape(V[C_bar_indices], n_x, n_u)
+            S_bar_V = V[S_bar_indices]
+            z_bar_V = V[z_bar_indices]
+
+            # interpolate control input
+            alpha = t / dt
+            u = (1 - alpha) * U[:, k] + alpha * U[:, k+1]
+
+            # compute dynamics and jacobian
+            f = dynamics6dof(xk, u, params)
+            A = state_jacobian6dof(xk, u, params)
+            B = control_jacobian6dof(xk, u, params)
+
+            # compute derivatives
+            dxdt = f  
+            dPhidt = A * Phi
+            dB_bar_dt = A * B_bar_V + B
+            dC_bar_dt = A * C_bar_V
+            dS_bar_dt = A * S_bar_V
+            dz_bar_dt = A * z_bar_V + f
+
+            # pack derivatives into dVdt
+            dVdt = zeros(V0_length)
+            dVdt[x_index] = dxdt
+            dVdt[A_bar_indices] = vec(dPhidt)
+            dVdt[B_bar_indices] = vec(dB_bar_dt)
+            dVdt[C_bar_indices] = vec(dC_bar_dt)
+            dVdt[S_bar_indices] = dS_bar_dt
+            dVdt[z_bar_indices] = dz_bar_dt
+
+            return nothing
+        end
+
+        # Integrate ODE from t=0 to t=dt
+        tspan = (0.0, dt)
+        prob = ODEProblem(f!, V0, tspan)
+        sol = solve(prob, Tsit5(); saveat=dt)
+
+        #get V at t = dt
+        V_end = sol.u[end]
+
+        # Extract Phi and other matrices
+        Phi = reshape(V_end[A_bar_indices], n_x, n_x)
+        A_bar[:, k] = vec(Phi)
+
+        B_bar_V = reshape(V_end[B_bar_indices], n_x, n_u)
+        B_bar[:, k] = vec(Phi * B_bar_V)
+
+        C_bar_V = reshape(V_end[C_bar_indices], n_x, n_u)
+        C_bar[:, k] = vec(Phi * C_bar_V)
+
+        S_bar_V = V_end[S_bar_indices]
+        S_bar[:, k] = Phi * S_bar_V
+
+        z_bar_V = V_end[z_bar_indices]
+        z_bar[:, k] = Phi * z_bar_V
+
+    end
+    return A_bar, B_bar, C_bar, S_bar, z_bar
+end
 
 end # module RocketDynamics6dof

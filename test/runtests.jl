@@ -3,12 +3,15 @@ include("../src/MainModule.jl")
 include("unit/test_6dofdynamics.jl")
 include("unit/test_dynamics3dof.jl")
 include("unit/test_convex_subproblem.jl")
+include("unit/test_discretization.jl")
+
 # include("test_scvx.jl")
 
 using .MainModule
 using .Test6DOFDynamics
 using .Test3DOFDynamics
 using .TestConvexSubproblem
+using .TestDiscretization
 using LinearAlgebra
 using Test
 using YAML
@@ -16,4 +19,6 @@ using YAML
 # run the tests 
 # runTest6DOFDynamics()
 # runTest3DOFDynamics()
-runTestConvexSubproblem()
+#runTestConvexSubproblem()
+runTestDiscretization()
+

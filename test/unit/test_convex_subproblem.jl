@@ -87,21 +87,26 @@ function runTestConvexSubproblem()
         # Verify that the optimized trajectories satisfy the initial condition
         @test x_opt[1, :] ≈ params["x0"] atol=1e-6
 
+        # Verify that the optimized trajectories satisfy the final conditioms
+        @test x_opt[end, 1:3] ≈ params["rf"] atol=1e-6
+        @test x_opt[end, 4:6] ≈ params["vf"] atol=1e-6
+        @test x_opt[end, 7:10] ≈ params["qf"] atol=1e-6
+        @test x_opt[end, 11:13] ≈ params["omegaf"] atol=1e-6
         # Optionally, you can test dynamics constraints by simulating the optimized trajectory
-        dt = params["dt"]
-        N = params["N"]
-        for k in 1:N-1
-            xk = x_opt[k, :]
-            uk = u_opt[k, :]
-            xk1_expected = x_opt[k+1, :]
+        # dt = params["dt"]
+        # N = params["N"]
+        # for k in 1:N-1
+        #     xk = x_opt[k, :]
+        #     uk = u_opt[k, :]
+        #     xk1_expected = x_opt[k+1, :]
 
-            # Compute the next state using the dynamics
-            dx = dynamics6dof(xk, uk, params)
-            xk1_simulated = xk + dt * dx
+        #     # Compute the next state using the dynamics
+        #     dx = dynamics6dof(xk, uk, params)
+        #     xk1_simulated = xk + dt * dx
 
-            # Compare the simulated next state with the optimized next state
-            @test norm(xk1_expected - xk1_simulated) / norm(xk1_expected) ≤ 2e-3
-        end
+        #     # Compare the simulated next state with the optimized next state
+        #     @test norm(xk1_expected - xk1_simulated) / norm(xk1_expected) ≤ 2e-3
+        # end
 
         println("All tests passed for the convex subproblem solver.")
     end

@@ -1,25 +1,30 @@
 # Simulation Parameters
-N: 100
+N: 10
 dt: 0.1
-
+sigma: 50.0 # TODO: put real number
 # System Parameters
 n_states: 14
 n_controls: 3
-gravity_vector: [0.0, 0.0, -3.711]  # Mars gravity in m/s^2
+#gravity_vector: [0.0, 0.0, -3.711]  # Mars gravity in m/s^2
+gravity_vector: [0.0, 0.0, -9.80665]  # Mars gravity in m/s^2
 standard_gravity: 9.80665           # Standard gravity in m/s^2
 I_sp: 300.0                         # Specific impulse in seconds
+# inertia_matrix:                     # Inertia matrix in kg·m²
+#   - [5000.0, 0.0, 0.0]
+#   - [0.0, 5000.0, 0.0]
+#   - [0.0, 0.0, 5000.0]
 inertia_matrix:                     # Inertia matrix in kg·m²
-  - [5000.0, 0.0, 0.0]
-  - [0.0, 5000.0, 0.0]
-  - [0.0, 0.0, 5000.0]
+  - [4000000.0, 0.0, 0.0]
+  - [0.0, 4000000.0, 0.0]
+  - [0.0, 0.0, 100000.0]
 
 # Initial Conditions
 x0:
   - 0.0        # Position x
-  - 0.0        # Position y
-  - 1000.0     # Position z
-  - 0.0        # Velocity x
-  - 0.0        # Velocity y
+  - 200.0        # Position y
+  - 500.0     # Position z
+  - -50.0        # Velocity x
+  - -100.0        # Velocity y
   - -50.0      # Velocity z
   - 1.0        # Quaternion q0
   - 0.0        # Quaternion q1
@@ -28,7 +33,29 @@ x0:
   - 0.0        # Angular velocity ωx
   - 0.0        # Angular velocity ωy
   - 0.0        # Angular velocity ωz
-  - 5000.0     # Mass
+  - 30000.0     # wet Mass
+
+# Final Conditions
+rf:
+  - 0.0        # Position x
+  - 0.0        # Position y
+  - 0.0        # Position z
+
+vf:
+  - 0.0        # Velocity x
+  - 0.0        # Velocity y
+  - -5.0        # Velocity z
+
+omegaf:
+  - 0.0        # Angular velocity ωx
+  - 0.0        # Angular velocity ωy
+  - 0.0        # Angular velocity ωz
+
+qf:
+  - 1.0        # Quaternion q0
+  - 0.0        # Quaternion q1
+  - 0.0        # Quaternion q2
+  - 0.0        # Quaternion q3
 
 # Control Input Guess
 # u_guess:
@@ -44,5 +71,16 @@ u_guess:
   - 49050.0    # Thrust Fz
   
 # dry mass
-m_dry: 1000.0
+m_dry: 22000.0
 mass_index: 14
+m_wet: 30000.0
+
+# glide slope angle
+gamma_gs: 20
+#deg2rad(90.0)
+
+omega_max: 90
+#deg2rad(30.0)
+
+T_max: 800000.0
+T_min: 320000.0

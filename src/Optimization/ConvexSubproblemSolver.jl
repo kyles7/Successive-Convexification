@@ -42,7 +42,7 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
     model = Model(Gurobi.Optimizer)
 
     # Suppress output from the solver (optional)
-    set_silent(model)
+    #set_silent(model)
 
     # Define decision variables
     @variable(model, x[1:N, 1:n_states])
@@ -51,6 +51,17 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
     # Initial condition constraint
     @constraint(model, x[1, :] .== params["x0"])
 
+    # final position constraint
+    @constraint(model, x[N, 1:3] .== params["rf"])
+
+    # final velocity constraint
+    @constraint(model, x[N, 4:6] .== params["vf"])
+
+    # final quaternion constraint
+    @constraint(model, x[N, 7:10] .== params["qf"])
+
+    # final angular velocity constraint
+    @constraint(model, x[N, 11:13] .== params["omegaf"])
     # Dynamics constraints
     for k in 1:N-1
         A = A_list[k]
@@ -72,19 +83,53 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
 
     @objective(model, Min, obj)
 
-    # Control constraints (if any)
-    if haskey(params, "u_min") && haskey(params, "u_max")
-        u_min = params["u_min"]
-        u_max = params["u_max"]
-        @constraint(model, [k=1:N-1, j=1:n_controls], u_min[j] <= u[k, j] <= u_max[j])
-    end
+    # Control constraints (if any) #TODO: convexify
+    # if haskey(params, "u_min") && haskey(params, "u_max")
+    #     u_min = params["u_min"]
+    #     u_max = params["u_max"]
+    #     @constraint(model, [k=1:N-1, j=1:n_controls], u_min[j] <= u[k, j] <= u_max[j])
+    # end
 
     # State constraints (if any)
     # mass constraint - mass must stay above dry mass
     mass_index = params["mass_index"]
-    @constraint(model, [k=1:N], x[k, mass_index] >= 0)  # Altitude constraint
+    # @constraint(model, [k=1:N], x[k, mass_index] >= m_dry)  # Altitude constraint
+    for k in 1:N
+        @constraint(model, x[k, mass_index] >= m_dry)  # Altitude constraint
+    end
     #TODO: implement thrust constraint
     #TODO: implement tilt constraint
+
+    #TODO: implememt glide slope constraint
+    e1 = [1.0, 0.0, 0.0]
+    e2 = [0.0, 1.0, 0.0]
+    e3 = [0.0, 0.0, 1.0]
+    H23 = [1.0 0.0 0.0; 0.0 1.0 0.0]
+   # gamma_gs = params["gamma_gs"] 
+    gamma_gs = deg2rad(20)#TODO: parameterize
+    tan_gamma_gs = tan(gamma_gs)
+    # add glide slope constraint as second order cone constraint
+    # @variable(model, t[1:N] >=0)
+
+    # for k in 1:N
+    #     x_k = x[k, 1]
+    #     y_k = x[k, 2]
+    #     z_k = x[k, 3]
+    #     r_k = [x_k; y_k; z_k]
+    #     @constraint(model, [t[k], x_k, y_k] in SecondOrderCone())
+    #     @constraint(model, z_k >= tan_gamma_gs * t[k])
+    # end
+    
+    # #TODO: implement angular velo constraint
+    # params["omega_max"] = deg2rad(90) #TODO: parameterize
+    # @variable(model, t_omega[1:N] >=0)
+    # for k in 1:N
+    #     omega_x_k = x[k, 11]
+    #     omega_y_k = x[k, 12]
+    #     omega_z_k = x[k, 13]
+    #     @constraint(model, [t_omega[k], omega_x_k, omega_y_k, omega_z_k] in SecondOrderCone())
+    #     @constraint(model, t_omega[k] <= params["omega_max"])
+    # end
 
     # Solve the optimization problem
     optimize!(model)
