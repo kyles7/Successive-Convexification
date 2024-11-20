@@ -226,61 +226,75 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
 
     #preallocate augmented state vec V
     V0 = zeros(V0_length)
+    V0[A_bar_indices] = vec(Matrix{Float64}(I, n_x, n_x))
 
     for k in 1:K-1
         #set initial augmented state
-        V0[x_index] = zeros(n_x)
-
-        # initialize phi as identity matrix
-        V0[A_bar_indices] = vec(Matrix{Float64}(I, n_x, n_x))
-        V0[B_bar_indices] .= 0
-        V0[C_bar_indices] .= 0
-        V0[S_bar_indices] .= 0
-        V0[z_bar_indices] .= 0
+        V0[x_index] = X[:, k]
 
         # define ODE function
         # inputs vector to store derivatives, current state vec, params, current time
-        function f!(dVdt, V, p, t)
-            # extract variables from V
-            xk = V[x_index]
-            Phi = reshape(V[A_bar_indices], n_x, n_x)
-            B_bar_V = reshape(V[B_bar_indices], n_x, n_u)
-            C_bar_V = reshape(V[C_bar_indices], n_x, n_u)
-            S_bar_V = V[S_bar_indices]
-            z_bar_V = V[z_bar_indices]
+        # function f!(dVdt, V, p, t)
+        #     # extract variables from V
+        #     xk = V[x_index]
+        #     Phi = reshape(V[A_bar_indices], n_x, n_x)
+        #     B_bar_V = reshape(V[B_bar_indices], n_x, n_u)
+        #     C_bar_V = reshape(V[C_bar_indices], n_x, n_u)
+        #     S_bar_V = V[S_bar_indices]
+        #     z_bar_V = V[z_bar_indices]
 
-            # interpolate control input
-            alpha = t / dt
-            u = (1 - alpha) * U[:, k] + alpha * U[:, k+1]
+        #     # interpolate control input
+        #     alpha = t / dt
+        #     u = (1 - alpha) * U[:, k] + alpha * U[:, k+1]
 
-            # compute dynamics and jacobian
-            f = dynamics6dof(xk, u, params)
-            A = state_jacobian6dof(xk, u, params)
-            B = control_jacobian6dof(xk, u, params)
+        #     # compute dynamics and jacobian
+        #     f = dynamics6dof(xk, u, params)
+        #     A = state_jacobian6dof(xk, u, params)
+        #     B = control_jacobian6dof(xk, u, params)
 
-            # compute derivatives
-            dxdt = f  
-            dPhidt = A * Phi
-            dB_bar_dt = A * B_bar_V + B
-            dC_bar_dt = A * C_bar_V
-            dS_bar_dt = A * S_bar_V
-            dz_bar_dt = A * z_bar_V + f
+        #     # compute derivatives
+        #     dxdt = f  
+        #     dPhidt = A * Phi
+        #     dB_bar_dt = A * B_bar_V + B
+        #     dC_bar_dt = A * C_bar_V
+        #     dS_bar_dt = A * S_bar_V
+        #     dz_bar_dt = A * z_bar_V + f
 
-            # pack derivatives into dVdt
+        #     # pack derivatives into dVdt
+        #     dVdt = zeros(V0_length)
+        #     dVdt[x_index] = dxdt
+        #     dVdt[A_bar_indices] = vec(dPhidt)
+        #     dVdt[B_bar_indices] = vec(dB_bar_dt)
+        #     dVdt[C_bar_indices] = vec(dC_bar_dt)
+        #     dVdt[S_bar_indices] = dS_bar_dt
+        #     dVdt[z_bar_indices] = dz_bar_dt
+
+        #     return nothing
+        # end
+        function f!(dVdt, V, sigma, t)
+            alpha = (dt - t) / dt
+            beta = t / dt
+            x = V[x_index]
+            u = U[:, k] + (t / dt) * (U[:, k+1] - U[:, k])
+            Phi_A_xi = inv(reshape(V[A_bar_indices], n_x, n_x))
+            A_subs = sigma * state_jacobian6dof(x, u, params)
+            B_subs = sigma * control_jacobian6dof(x, u, params)
+            f_subs = dynamics6dof(x, u, params)
+            # initialize dVdt
             dVdt = zeros(V0_length)
-            dVdt[x_index] = dxdt
-            dVdt[A_bar_indices] = vec(dPhidt)
-            dVdt[B_bar_indices] = vec(dB_bar_dt)
-            dVdt[C_bar_indices] = vec(dC_bar_dt)
-            dVdt[S_bar_indices] = dS_bar_dt
-            dVdt[z_bar_indices] = dz_bar_dt
-
-            return nothing
+            dVdt[x_index] = sigma * f_subs'
+            dVdt[A_bar_indices] = vec(A_subs * reshape(V[A_bar_indices], n_x, n_x))
+            dVdt[B_bar_indices] = vec(Phi_A_xi * B_subs) * alpha
+            dVdt[C_bar_indices] = vec(Phi_A_xi * B_subs) * beta
+            dVdt[S_bar_indices] = (Phi_A_xi * f_subs)'
+            z_t = -A_subs * x - B_subs * u
+            dVdt[z_bar_indices] = (Phi_A_xi * z_t)
+            return dVdt
         end
 
         # Integrate ODE from t=0 to t=dt
         tspan = (0.0, dt)
-        prob = ODEProblem(f!, V0, tspan)
+        prob = ODEProblem(f!, V0, tspan, sigma)
         sol = solve(prob, Tsit5(); saveat=dt)
 
         #get V at t = dt
