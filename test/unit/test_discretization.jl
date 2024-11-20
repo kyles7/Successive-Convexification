@@ -15,8 +15,8 @@ function runTestDiscretization()
     params = Parameters.load_parameters(config_path)
 
     x_ref, u_ref = initialize_trajectory6dof(params)
-    x_ref = Array{Float64,2}(x_ref)'
-    u_ref = Array{Float64,2}(u_ref)'
+    x_ref = Array{Float64,2}(x_ref)
+    u_ref = Array{Float64,2}(u_ref)
 
     # println("x_ref: ", x_ref)
     # println("u_ref: ", u_ref)

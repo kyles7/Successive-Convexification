@@ -113,28 +113,51 @@ function control_jacobian6dof(x::AbstractVector{T}, u::AbstractVector{T}, params
     return B
 end
 
-# TODO: use same initial guess as in paper
 function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2}, AbstractArray{Real,2}}
+    """
+    Initialize the trajectory.
+
+    :param params: Dictionary containing parameters like T_max and T_min
+    :return: The initialized X (n_states x K) and U (n_controls x K)
+    """
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
+    T_max = params["T_max"]
+    T_min = params["T_min"]
 
-    x_init = zeros(N, n_states)
-    u_init = zeros(N, n_controls)
+    # Initialize state and control matrices
+    X = zeros(n_states, N) # 14 x 10
+    U = zeros(n_controls, N) # 3 x 10 
 
-    x_init[1, :] = params["x0"]
-    u_init[1, :] = params["u_guess"]
-    # Simple initial guess for control inputs
-    for k in 1:N-1
-        xk = x_init[k, :]
-        uk = params["u_guess"]
-        dx = dynamics6dof(xk, uk, params)
-        x_init[k+1, :] = xk + params["dt"] * dx
-        u_init[k+1, :] = uk
+    m0 = params["m_wet"]
+    r0 = params["x0"][1:3]
+    v0 = params["x0"][4:6]
+    q0 = params["x0"][7:10]
+    omega0 = params["x0"][11:13]
+    mf = params["m_dry"]
+    rf = params["rf"]
+    vf = params["vf"]
+    qf = params["qf"]
+    omegaf = params["omegaf"]
+
+    for k in 1:N
+        alpha1 = (N-k) / N
+        alpha2 = k / N
+
+        m_k = alpha1 * m0 + alpha2 * mf
+        r_I_k = alpha1 * r0 + alpha2 * rf
+        v_I_k = alpha1 * v0 + alpha2 * vf
+        q_B_I_k = alpha1 * q0 + alpha2 * qf
+        omega_B_k = alpha1 * omega0 + alpha2 * omegaf
+
+        X[:, k] = vcat(r_I_k, v_I_k, q_B_I_k, omega_B_k, m_k)
+        U[:, k] = ((T_max - T_min) /2) * [0.0, 0.0, 1.0]
     end
 
-    return x_init, u_init
+    return X, U
 end
+
 
 # Helper function to compute skew-symmetric matrix of a vector TODO: move to utils
 function skew_symmetric3d(v::AbstractVector{T}) :: AbstractMatrix{T} where T <: Real
@@ -177,6 +200,8 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
     :param params: Parameters dictionary
     :return: Discretization matrices A_bar, B_bar, C_bar, S_bar, z_bar
     """
+    # Extract dimensions
+    
     K = size(X, 2)
     n_x = size(X, 1)
     n_u = size(U, 1)
