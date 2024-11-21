@@ -134,10 +134,10 @@ function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2},
     q0 = params["x0"][7:10]
     omega0 = params["x0"][11:13]
     mf = params["m_dry"]
-    rf = params["rf"]
-    vf = params["vf"]
-    qf = params["qf"]
-    omegaf = params["omegaf"]
+    rf = params["xf"][1:3]
+    vf = params["xf"][4:6]
+    qf = params["xf"][7:10]
+    omegaf = params["xf"][11:13]
 
     for k in 1:N
         alpha1 = (N-k) / N
@@ -332,12 +332,12 @@ function x_nondim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing wher
     return nothing
 end
 
-function u_nondim!(u::T, m_scale::T, r_scale::T) :: Nothing where T <: Real
+function u_nondim!(u::T, m_scale::T, r_scale::T) :: T where T <: Real
     """
     Nondimensionalize the control vector u.
     """
     u /= (m_scale * r_scale)
-    return nothing
+    return u
 end
 
 function x_redim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where T <: Real
@@ -351,12 +351,12 @@ function x_redim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where
     return nothing
 end
 
-function u_redim!(u::T, m_scale::T, r_scale::T) :: Nothing where T <: Real
+function u_redim!(u::T, m_scale::T, r_scale::T) :: T where T <: Real
     """
     Redimensionalize the control vector u.
     """
     u *= (m_scale * r_scale)
-    return nothing
+    return u
 end
 
 # Nondimensionalization and redimensionalization functions
@@ -376,9 +376,8 @@ function nondimensionalize!(params::Dict)
     x_nondim!(params["x0"], m_scale, r_scale)
     x_nondim!(params["xf"], m_scale, r_scale)
 
-    # Nondimensionalize control limits
-    u_nondim!(params["T_max"], m_scale, r_scale)
-    u_nondim!(params["T_min"], m_scale, r_scale)
+    params["T_max"] = u_nondim!(params["T_max"], m_scale, r_scale)
+    params["T_min"] = u_nondim!(params["T_min"], m_scale, r_scale)
 
     # Nondimensionalize masses
     params["m_wet"] /= m_scale
