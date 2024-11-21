@@ -57,6 +57,22 @@ qf:
   - 0.0        # Quaternion q2
   - 0.0        # Quaternion q3
 
+xf:
+  - 0.0        # Position x
+  - 0.0        # Position y
+  - 0.0        # Position z
+  - 0.0        # Velocity x
+  - 0.0        # Velocity y
+  - -5.0        # Velocity z
+  - 1.0        # Quaternion q0
+  - 0.0        # Quaternion q1
+  - 0.0        # Quaternion q2
+  - 0.0        # Quaternion q3
+  - 0.0        # Angular velocity ωx
+  - 0.0        # Angular velocity ωy
+  - 0.0        # Angular velocity ωz
+  - 22000.0     # dry Mass
+
 # Control Input Guess
 # u_guess:
 #   - 0.0        # Thrust Fx
@@ -69,7 +85,13 @@ u_guess:
   - 0.0        # Thrust Fx
   - 0.0        # Thrust Fy
   - 49050.0    # Thrust Fz
-  
+
+r_T_B: 
+  - 0.0
+  - 0.0    
+  - -14.0   
+
+
 # dry mass
 m_dry: 22000.0
 mass_index: 14

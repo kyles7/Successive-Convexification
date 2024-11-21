@@ -4,7 +4,7 @@ using LinearAlgebra
 using ForwardDiff
 using DifferentialEquations
 
-export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization
+export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!
 
 struct RocketDynamics_6dof 
     params::Dict
@@ -23,7 +23,7 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     # Mass
     m = x[14]
     # Position of engine wrt center of mass TODO: add to params
-    rTB = [0.0; 0.0; -14.0]
+    rTB = params["r_T_B"]
     # Extract control inputs
     TBx, TBy, TBz = u[1:3]
     # Compute thrust and moment vectors
@@ -34,8 +34,6 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     # Fbx, Fby, Fbz = u[1:3]
     # # Thrust moment in body frame
     # Mbx, Mby, Mbz = u[4:6]
-
-    #TODO: switch control vector to T
 
     # Parameters
     g_inertial = params["gravity_vector"]  # Gravitational acceleration vector [gx, gy, gz]
@@ -319,5 +317,100 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
     end
     return A_bar, B_bar, C_bar, S_bar, z_bar
 end
+
+function x_nondim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where T <: Real
+    """
+        Nondimensionalize the state vector x.
+    """
+    # Nondimensionalize position
+    x[1:3] /= r_scale
+    # Nondimensionalize velocity
+    x[4:6] /= r_scale
+    # Nondimensionalize mass
+    x[14] /= m_scale
+    return nothing
+end
+
+function u_nondim!(u::T, m_scale::T, r_scale::T) :: Nothing where T <: Real
+    """
+    Nondimensionalize the control vector u.
+    """
+    u /= (m_scale * r_scale)
+    return nothing
+end
+
+function x_redim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where T <: Real
+    """
+    Redimensionalize the state vector x.
+    """
+    # Redimensionalize position
+    x[1:3] *= r_scale
+    # Redimensionalize velocity
+    x[4:6] *= r_scale
+    return nothing
+end
+
+function u_redim!(u::T, m_scale::T, r_scale::T) :: Nothing where T <: Real
+    """
+    Redimensionalize the control vector u.
+    """
+    u *= (m_scale * r_scale)
+    return nothing
+end
+
+# Nondimensionalization and redimensionalization functions
+function nondimensionalize!(params::Dict)
+    """
+    Nondimensionalize the parameters in the params dictionary.
+    """
+    # Nondimensionalize parameters
+    r_scale = norm(params["x0"][1:3])
+    m_scale = params["m_wet"]
+
+    params["r_T_B"] /= r_scale
+    params["gravity_vector"] /= r_scale
+    params["inertia_matrix"] /= m_scale * r_scale^2
+
+    # Nondimensionalize initial and final states
+    x_nondim!(params["x0"], m_scale, r_scale)
+    x_nondim!(params["xf"], m_scale, r_scale)
+
+    # Nondimensionalize control limits
+    u_nondim!(params["T_max"], m_scale, r_scale)
+    u_nondim!(params["T_min"], m_scale, r_scale)
+
+    # Nondimensionalize masses
+    params["m_wet"] /= m_scale
+    params["m_dry"] /= m_scale
+    return nothing
+end
+
+function redimensionalize!(params::Dict)
+    """
+    Redimensionalize the parameters in the params dictionary.
+    """
+    # Redimensionalize parameters
+    r_scale = norm(params["x0"][1:3])
+    m_scale = params["m_wet"]
+
+    params["r_T_B"] *= r_scale
+    params["gravity_vector"] *= r_scale
+    params["inertia_matrix"] *= m_scale * r_scale^2
+
+    # Redimensionalize initial and final states
+    x_redim(params["x0"])
+    x_redim(params["xf"])
+
+    # Redimensionalize control limits
+    u_redim(params["T_max"])
+    u_redim(params["T_min"])
+
+    # Redimensionalize masses
+    params["m_wet"] *= m_scale
+    params["m_dry"] *= m_scale
+    return nothing
+end
+
+
 
 end # module RocketDynamics6dof
