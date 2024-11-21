@@ -30,9 +30,9 @@ x0:
   - 0.0        # Quaternion q1
   - 0.0        # Quaternion q2
   - 0.0        # Quaternion q3
-  - 0.0        # Angular velocity ωx
-  - 0.0        # Angular velocity ωy
-  - 0.0        # Angular velocity ωz
+  - 10.0        # Angular velocity ωx
+  - 10.0        # Angular velocity ωy
+  - 10.0        # Angular velocity ωz
   - 30000.0     # wet Mass
 
 # Final Conditions

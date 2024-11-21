@@ -290,6 +290,7 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
             return dVdt
         end
 
+        #test = f!(zeros(V0_length), V0, sigma, 0.0) # using this allows you to step thru f!
         # Integrate ODE from t=0 to t=dt
         tspan = (0.0, dt)
         prob = ODEProblem(f!, V0, tspan, sigma)
