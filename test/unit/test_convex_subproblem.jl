@@ -38,32 +38,41 @@ function runTestConvexSubproblem()
     redimensionalize!(params)
     r_scale = norm(params["x0"][1:3])
     m_scale = params["m_wet"]
-
-    # println("Results before redimensionalization: ")
-    # println("---------------------------------")
-    # println("Optimized state trajectory: ", x_opt')
-    # println("---------------------------------")
-    # println("Optimized control trajectory: ", u_opt')
-    # println("---------------------------------")
     
     # Loop through the time steps and redimensionalize the optimized trajectories
-    
     # TODO: Implement the redimensionalization procedure in RocketDynamics6dof.jl
     for k in 1:size(x_opt, 2)
         state_vec = @view x_opt[:, k]
         x_redim!(state_vec, m_scale, r_scale)
         control_vec = @view u_opt[:, k]
         u_redim!(control_vec, m_scale, r_scale)
+    end
 
+    # redimensionalize the initial trajectory
+    for k in 1:size(X, 2)
+        state_vec = @view X[:, k]
+        x_redim!(state_vec, m_scale, r_scale)
+        control_vec = @view U[:, k]
+        u_redim!(control_vec, m_scale, r_scale)
     end
 
     # Print the results
-    println("Results after redimensionalization: ")
-    println("---------------------------------")
-    println("Optimized state trajectory: ", x_opt')
-    println("---------------------------------")
-    println("Optimized control trajectory: ", u_opt')
+    # println("Initial trajectory: ")
+    # println("---------------------------------")
+    # println("Reference state trajectory: ", X)
+    # println("---------------------------------")
+    # println("Reference control trajectory: ", U)
+    # println("---------------------------------")
+    # println("Results after redimensionalization: ")
+    # println("---------------------------------")
+    # println("Optimized state trajectory: ", x_opt)
+    # println("---------------------------------")
+    # println("Optimized control trajectory: ", u_opt)
 
+    thrust_scale = 0.0002
+    attitude_scale = 100
+    # plot_trajectory(X, U, thrust_scale, attitude_scale)
+    plot_trajectory(x_opt, u_opt, thrust_scale, attitude_scale)
 
     # Test the results
     # @testset "Convex Subproblem Solver Tests" begin

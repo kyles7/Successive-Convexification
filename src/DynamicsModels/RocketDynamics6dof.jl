@@ -228,6 +228,7 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
 
     for k in 1:K-1
         #set initial augmented state
+        println("Calculating discretization for time step: ", k)
         V0[x_index] = X[:, k]
         # define ODE function
         # inputs vector to store derivatives, current state vec, params, current time
@@ -390,6 +391,8 @@ function nondimensionalize!(params::Dict)
     # Nondimensionalize masses
     params["m_wet"] /= m_scale
     params["m_dry"] /= m_scale
+
+    println("Nondimensionalization complete")
     return nothing
 end
 
@@ -418,6 +421,8 @@ function redimensionalize!(params::Dict)
     # Redimensionalize masses
     params["m_wet"] *= m_scale
     params["m_dry"] *= m_scale
+
+    println("Redimensionalization complete")
     return nothing
 end
 
