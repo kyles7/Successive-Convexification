@@ -30,10 +30,14 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
+    T_max = params["T_max"]
+    m_dry = params["m_dry"]
+    T_min = params["T_min"]
+    omega_max = params["omega_max"]
+
     
     model = Model(Gurobi.Optimizer)
     set_silent(model)
-
     # define decision variables: state, control, nu, sigma 
     @variable(model, x[1:n_states, 1:N])
     @variable(model, u[1:n_controls, 1:N])
@@ -59,9 +63,16 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     # TODO: SOCC Glideslope Constraint
     # TODO: SOCC Angle Constraint
     # TODO: Angular velocity constraint
+    for k in 1:N
+        @constraint(model, [omega_max; x[11:13,k]] in SecondOrderCone())
+    end
     # ------------------- CONTROL CONSTRAINTS -------------------- #
     # TODO: Thrust magnitude upper bound
+    for k in 1:N
+        @constraint(model, [T_max; u[:,k]] in SecondOrderCone())
+    end
     # TODO: Linearize thrust lower bound
+    #TODO: gimbal angle constraint
     # ------------------- DYNAMICS CONSTRAINTS ------------------- #
     for k in 1:N-1
         @constraint(model, x[:, k+1] .== 
@@ -82,7 +93,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     # ------------------- OBJECTIVE FUNCTION --------------------- #
     @objective(model, Min, 
         params["weight_sigma"] * sigma +
-        params["weight_nu"] * norm(nu) +
+        #params["weight_nu"] * norm(nu) +
         #params["weight_nu"] * norm(nu) + 
         1e5 * sum(s_prime)
     )

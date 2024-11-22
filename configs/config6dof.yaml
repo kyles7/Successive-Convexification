@@ -101,7 +101,7 @@ m_wet: 30000.0
 gamma_gs: 20
 #deg2rad(90.0)
 
-omega_max: 90
+omega_max: 30
 #deg2rad(30.0)
 
 T_max: 800000.0

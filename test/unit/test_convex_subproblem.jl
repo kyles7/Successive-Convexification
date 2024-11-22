@@ -23,6 +23,7 @@ function runTestConvexSubproblem()
     params = Parameters.load_parameters(config_path)
     sigma = params["sigma"]
     # Initialize reference trajectories
+    nondimensionalize!(params)
     X, U = initialize_trajectory6dof(params)
     X = Array{Float64,2}(X)
     U = Array{Float64,2}(U)
