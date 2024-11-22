@@ -15,7 +15,7 @@ function runTestDiscretization()
     params = Parameters.load_parameters(config_path)
 
     # normalize the parameters
-    # nondimensionalize!(params)
+    nondimensionalize!(params)
 
     x_ref, u_ref = initialize_trajectory6dof(params)
     x_ref = Array{Float64,2}(x_ref)

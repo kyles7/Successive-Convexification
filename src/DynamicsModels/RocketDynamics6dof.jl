@@ -229,7 +229,6 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
     for k in 1:K-1
         #set initial augmented state
         V0[x_index] = X[:, k]
-
         # define ODE function
         # inputs vector to store derivatives, current state vec, params, current time
         # function f!(dVdt, V, p, t)
@@ -278,8 +277,6 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
             A_subs = sigma * state_jacobian6dof(x, u, params)
             B_subs = sigma * control_jacobian6dof(x, u, params)
             f_subs = dynamics6dof(x, u, params)
-            # initialize dVdt
-            dVdt = zeros(V0_length)
             dVdt[x_index] = sigma * f_subs'
             dVdt[A_bar_indices] = vec(A_subs * reshape(V[A_bar_indices], n_x, n_x))
             dVdt[B_bar_indices] = vec(Phi_A_xi * B_subs) * alpha
@@ -287,17 +284,16 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
             dVdt[S_bar_indices] = (Phi_A_xi * f_subs)'
             z_t = -A_subs * x - B_subs * u
             dVdt[z_bar_indices] = (Phi_A_xi * z_t)
-            return dVdt
+            return nothing
         end
 
         #test = f!(zeros(V0_length), V0, sigma, 0.0) # using this allows you to step thru f!
         # Integrate ODE from t=0 to t=dt
         tspan = (0.0, dt)
         prob = ODEProblem(f!, V0, tspan, sigma)
-        sol = solve(prob, AutoVern7(Rodas5()), reltol = 1e-8, abstol = 1e-8; saveat=dt)
+        sol = solve(prob, Tsit5(), reltol = 1e-6, abstol = 1e-6; saveat=dt)
         #get V at t = dt
-        V_end = sol.u[end]
-
+        V_end = sol.u[end]        
         # Extract Phi and other matrices
         Phi = reshape(V_end[A_bar_indices], n_x, n_x)
         A_bar[:, k] = vec(Phi)
@@ -347,15 +343,26 @@ function x_redim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where
     x[1:3] *= r_scale
     # Redimensionalize velocity
     x[4:6] *= r_scale
+    # Redimensionalize mass
+    x[14] *= m_scale
+
     return nothing
 end
 
 function u_redim!(u::T, m_scale::T, r_scale::T) :: T where T <: Real
     """
-    Redimensionalize the control vector u.
+    Redimensionalize max thrust and min thrust
     """
     u *= (m_scale * r_scale)
     return u
+end
+
+function u_redim!(u::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where T <: Real
+    """
+    Redimensionalize the control vector u.
+    """
+    u .*= (m_scale * r_scale)
+    return nothing
 end
 
 # Nondimensionalization and redimensionalization functions
@@ -366,6 +373,8 @@ function nondimensionalize!(params::Dict)
     # Nondimensionalize parameters
     r_scale = norm(params["x0"][1:3])
     m_scale = params["m_wet"]
+    println("r_scale: ", r_scale)
+    println("m_scale: ", m_scale)
 
     params["r_T_B"] /= r_scale
     params["gravity_vector"] /= r_scale
@@ -389,20 +398,22 @@ function redimensionalize!(params::Dict)
     Redimensionalize the parameters in the params dictionary.
     """
     # Redimensionalize parameters
-    r_scale = norm(params["x0"][1:3])
-    m_scale = params["m_wet"]
-
+    # r_scale = norm(params["x0"][1:3])
+    # m_scale = params["m_wet"]
+    r_scale = 538.5164 #TODO: remove hardcoding
+    m_scale = 30000.0 #TODO: remove hardcoding
+    
     params["r_T_B"] *= r_scale
     params["gravity_vector"] *= r_scale
     params["inertia_matrix"] *= m_scale * r_scale^2
 
     # Redimensionalize initial and final states
-    x_redim(params["x0"])
-    x_redim(params["xf"])
+    x_redim!(params["x0"], m_scale, r_scale)
+    x_redim!(params["xf"], m_scale, r_scale)
 
     # Redimensionalize control limits
-    u_redim(params["T_max"])
-    u_redim(params["T_min"])
+    u_redim!(params["T_max"], m_scale, r_scale)
+    u_redim!(params["T_min"], m_scale, r_scale)
 
     # Redimensionalize masses
     params["m_wet"] *= m_scale

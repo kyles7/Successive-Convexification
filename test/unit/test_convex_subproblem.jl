@@ -33,10 +33,38 @@ function runTestConvexSubproblem()
 
     # Solve the convex subproblem
     x_opt, u_opt = solve_convex_subproblem(A_list, B_list, C_list, S_list, Z_list, X, U, X, U, sigma, sigma, params)
-
     println("Convex subproblem solved successfully.")
-    println("Optimized state trajectory: ", x_opt)
-    println("Optimized control trajectory: ", u_opt)
+
+    redimensionalize!(params)
+    r_scale = norm(params["x0"][1:3])
+    m_scale = params["m_wet"]
+
+    # println("Results before redimensionalization: ")
+    # println("---------------------------------")
+    # println("Optimized state trajectory: ", x_opt')
+    # println("---------------------------------")
+    # println("Optimized control trajectory: ", u_opt')
+    # println("---------------------------------")
+    
+    # Loop through the time steps and redimensionalize the optimized trajectories
+    
+    # TODO: Implement the redimensionalization procedure in RocketDynamics6dof.jl
+    for k in 1:size(x_opt, 2)
+        state_vec = @view x_opt[:, k]
+        x_redim!(state_vec, m_scale, r_scale)
+        control_vec = @view u_opt[:, k]
+        u_redim!(control_vec, m_scale, r_scale)
+
+    end
+
+    # Print the results
+    println("Results after redimensionalization: ")
+    println("---------------------------------")
+    println("Optimized state trajectory: ", x_opt')
+    println("---------------------------------")
+    println("Optimized control trajectory: ", u_opt')
+
+
     # Test the results
     # @testset "Convex Subproblem Solver Tests" begin
     #     # Check dimensions of the optimized trajectories
