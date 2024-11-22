@@ -26,14 +26,14 @@ Solves the convex subproblem in the Scvx algorithm using Gurobi.
 # Returns
 - `(x_opt::Array, u_opt::Array)`: Optimized state and control trajectories.
 """
-function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last, U_last, sigma, sigma_last, params::Dict)
+function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last, U_last, sig, sigma_last, params::Dict)
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
     T_max = params["T_max"]
     m_dry = params["m_dry"]
     T_min = params["T_min"]
-    omega_max = params["omega_max"]
+    omega_max = params["rad_omega_max"]
     tan_gamma_gs = params["tan_gamma_gs"]
     cos_theta_max = params["cos_theta_max"]
     tan_delta_max = params["tan_delta_max"]
@@ -106,7 +106,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     du = u - U_last
     dx = x - X_last
     ds = sigma - sigma_last 
-    # TODO: sum of norms less than max trust region radius
+    # TRUST REGION CONSTRAINT
     @variable(model, dx_abs[1:n_states, 1:N] >=0)
     @variable(model, du_abs[1:n_controls, 1:N] >=0)
     @variable(model, ds_abs >=0)
@@ -133,11 +133,19 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
    # @constraint(model, norm(du) + norm(dx) + norm(ds) <= params["tr_radius"])
 
     # ------------------- OBJECTIVE FUNCTION --------------------- #
+    @variable(model, nu_abs[1:n_states, 1:N-1] >=0)
+    for i in 1:n_states
+        for k in 1:N-1
+            @constraint(model, nu_abs[i,k] >= nu[i,k])
+            @constraint(model, nu_abs[i,k] >= -nu[i,k])
+        end
+    end
+    norm_nu = sum(nu_abs)
+    sum_s_prime = sum(s_prime)
     @objective(model, Min, 
         params["weight_sigma"] * sigma +
-        #params["weight_nu"] * norm(nu) +
-        #params["weight_nu"] * norm(nu) + 
-        1e5 * sum(s_prime)
+        params["weight_nu"] * norm_nu +
+        1e5 * sum_s_prime
     )
 
     optimize!(model)

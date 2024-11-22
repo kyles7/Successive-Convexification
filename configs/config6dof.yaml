@@ -30,9 +30,9 @@ x0:
   - 0.0        # Quaternion q1
   - 0.0        # Quaternion q2
   - 0.0        # Quaternion q3
-  - 10.0        # Angular velocity ωx
-  - 10.0        # Angular velocity ωy
-  - 10.0        # Angular velocity ωz
+  - 0.0        # Angular velocity ωx
+  - 0.0        # Angular velocity ωy
+  - 0.0        # Angular velocity ωz
   - 30000.0     # wet Mass
 
 # Final Conditions
@@ -106,7 +106,8 @@ cos_theta_max: 0.34202
 delta_max: 7
 tan_delta_max: 0.12278
 
-omega_max: 30git
+omega_max: 90
+rad_omega_max: 1.5708
 #deg2rad(30.0)
 
 T_max: 800000.0
