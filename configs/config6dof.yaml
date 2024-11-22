@@ -116,6 +116,6 @@ max_iters: 20
 tolerance: 1e-4
 
 #TODO: put real number
-weight_nu: 1.0
-weight_sigma: 1.0
-tr_radius: 1.0
+weight_nu: 100000.0
+weight_sigma: 10.0
+tr_radius: 5.0

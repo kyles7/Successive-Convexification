@@ -86,7 +86,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
         @constraint(model, [T_max; u[:,k]] in SecondOrderCone())
     end
     # TODO: Linearize thrust lower bound
-    #TODO: gimbal angle constraint
+    # GIMBAL ANGLE CONSTRAINT
     @variable(model, t_u[1:N]>=0) # aux var 
     for k in 1:N
         @constraint(model, t_u[k] == tan_delta_max * u[3, k])
@@ -107,6 +107,29 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     dx = x - X_last
     ds = sigma - sigma_last 
     # TODO: sum of norms less than max trust region radius
+    @variable(model, dx_abs[1:n_states, 1:N] >=0)
+    @variable(model, du_abs[1:n_controls, 1:N] >=0)
+    @variable(model, ds_abs >=0)
+
+    for i in 1:n_states
+        for k in 1:N
+            @constraint(model, dx_abs[i,k] >= dx[i,k])
+            @constraint(model, dx_abs[i,k] >= -dx[i,k])
+        end
+    end
+    for i in 1:n_controls
+        for k in 1:N
+            @constraint(model, du_abs[i,k] >= du[i,k])
+            @constraint(model, du_abs[i,k] >= -du[i,k])
+        end
+    end
+    @constraint(model, ds_abs >= ds)
+    @constraint(model, ds_abs >= -ds)
+
+    norm_dx = sum(dx_abs)
+    norm_du = sum(du_abs)
+    norm_ds = ds_abs
+    @constraint(model, norm_dx + norm_du + norm_ds <= params["tr_radius"])
    # @constraint(model, norm(du) + norm(dx) + norm(ds) <= params["tr_radius"])
 
     # ------------------- OBJECTIVE FUNCTION --------------------- #
