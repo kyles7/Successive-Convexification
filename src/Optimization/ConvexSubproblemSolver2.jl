@@ -35,6 +35,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     T_min = params["T_min"]
     omega_max = params["omega_max"]
     tan_gamma_gs = params["tan_gamma_gs"]
+    cos_theta_max = params["cos_theta_max"]
 
     
     model = Model(Gurobi.Optimizer)
@@ -69,7 +70,11 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
         @constraint(model, t_k[k] == x[3,k] / tan_gamma_gs)
         @constraint(model, [t_k[k]; x[1:2,k]] in SecondOrderCone())
     end
-    # TODO: SOCC Angle Constraint
+    # TILT ANGLE CONSTRAINT
+    c = sqrt((1 - cos_theta_max) / 2)
+    for k in 1:N
+        @constraint(model, [c; x[8:10,k]] in SecondOrderCone())
+    end
     # MAX ANGULAR VELOCITY CONSTRAINT
     for k in 1:N
         @constraint(model, [omega_max; x[11:13,k]] in SecondOrderCone())

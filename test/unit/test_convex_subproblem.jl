@@ -23,7 +23,7 @@ function runTestConvexSubproblem()
     params = Parameters.load_parameters(config_path)
     sigma = params["sigma"]
     # Initialize reference trajectories
-    nondimensionalize!(params)
+   # nondimensionalize!(params)
     X, U = initialize_trajectory6dof(params)
     X = Array{Float64,2}(X)
     U = Array{Float64,2}(U)
@@ -33,6 +33,10 @@ function runTestConvexSubproblem()
 
     # Solve the convex subproblem
     x_opt, u_opt = solve_convex_subproblem(A_list, B_list, C_list, S_list, Z_list, X, U, X, U, sigma, sigma, params)
+
+    println("Convex subproblem solved successfully.")
+    println("Optimized state trajectory: ", x_opt)
+    println("Optimized control trajectory: ", u_opt)
     # Test the results
     # @testset "Convex Subproblem Solver Tests" begin
     #     # Check dimensions of the optimized trajectories

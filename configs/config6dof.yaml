@@ -101,6 +101,8 @@ m_wet: 30000.0
 gamma_gs: 20
 tan_gamma_gs: 0.36397
 #deg2rad(90.0)
+theta_max: 70
+cos_theta_max: 0.34202
 
 omega_max: 30
 #deg2rad(30.0)
