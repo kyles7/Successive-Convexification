@@ -27,7 +27,7 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     # Extract control inputs
     TBx, TBy, TBz = u[1:3]
     # Compute thrust and moment vectors
-    FIx, FIy, FIz = quaternion_to_rotation_matrix(q0, q1, q2, q3) * [TBx; TBy; TBz]
+    FIx, FIy, FIz = quaternion_to_rotation_matrix(q0, q1, q2, q3)' * [TBx; TBy; TBz]
     MBx, MBy, MBz = skew_symmetric3d(rTB) * [TBx; TBy; TBz]
 
     # # Thrust force in body frame
