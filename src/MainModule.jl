@@ -10,7 +10,7 @@ module MainModule
     include("Utilities/Parameters.jl")
     include("DynamicsModels/RocketDynamics3dof.jl")  # use this for test_dynamics
     include("DynamicsModels/RocketDynamics6dof.jl")  # use this for test_6dofdynamics
-    include("Optimization/ConvexSubproblemSolver.jl")
+    include("Optimization/ConvexSubproblemSolver2.jl")
     using .Parameters, .RocketDynamics6dof, .RocketDynamics3dof, .ConvexSubproblemSolver
     export Parameters, RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, RocketDynamics_3dof, dynamics3dof, state_jacobian3dof, control_jacobian3dof, initialize_trajectory3dof, solve_convex_subproblem, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!
 

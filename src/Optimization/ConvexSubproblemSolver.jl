@@ -33,16 +33,11 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
     dt = params["dt"]
     m_dry = params["m_dry"]
 
-    # Extract weighting matrices for the objective function
-    Q = params["Q"]        # State weighting matrix
-    R = params["R"]        # Control weighting matrix
-    QN = params["QN"]      # Terminal state weighting matrix (if any)
-
     # Create a JuMP model with Gurobi optimizer
     model = Model(Gurobi.Optimizer)
 
     # Suppress output from the solver (optional)
-    #set_silent(model)
+    set_silent(model)
 
     # Define decision variables
     @variable(model, x[1:N, 1:n_states])

@@ -86,7 +86,7 @@ function quaternion_to_rotation_matrix(q0::T, q1::T, q2::T, q3::T) :: AbstractMa
     R[3, 1] = 2 * (q1 * q3 + q2 * q0)
     R[3, 2] = 2 * (q2 * q3 - q1 * q0)
     R[3, 3] = 1 - 2 * (q1^2 + q2^2)
-    return R
+    return R'
 end
 
 # Quaternion product
@@ -294,8 +294,7 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
         # Integrate ODE from t=0 to t=dt
         tspan = (0.0, dt)
         prob = ODEProblem(f!, V0, tspan, sigma)
-        sol = solve(prob, Tsit5(); saveat=dt)
-
+        sol = solve(prob, AutoVern7(Rodas5()), reltol = 1e-8, abstol = 1e-8; saveat=dt)
         #get V at t = dt
         V_end = sol.u[end]
 

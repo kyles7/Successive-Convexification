@@ -19,6 +19,6 @@ using YAML
 # run the tests 
 # runTest6DOFDynamics()
 # runTest3DOFDynamics()
-#runTestConvexSubproblem()
-runTestDiscretization()
+runTestConvexSubproblem()
+#runTestDiscretization()
 
