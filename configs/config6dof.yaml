@@ -99,6 +99,7 @@ m_wet: 30000.0
 
 # glide slope angle
 gamma_gs: 20
+tan_gamma_gs: 0.36397
 #deg2rad(90.0)
 
 omega_max: 30

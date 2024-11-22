@@ -34,6 +34,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     m_dry = params["m_dry"]
     T_min = params["T_min"]
     omega_max = params["omega_max"]
+    tan_gamma_gs = params["tan_gamma_gs"]
 
     
     model = Model(Gurobi.Optimizer)
@@ -58,16 +59,23 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     @constraint(model, x[11:13, N] .== params["xf"][11:13])
     # no final mass constraint 
     # ------------------- STATE CONSTRAINTS ---------------------- #
-    # TODO: mass must be higher than dry mass
+    # MIN  MASS CONSTRAINT
     @constraint(model, x[14, :] .>= params["m_dry"])
-    # TODO: SOCC Glideslope Constraint
+
+    # GLIDESLOPE CONSTRAINT
+    # auxilarry variable t 
+    @variable(model, t_k[1:N]>=0)
+    for k in 1:N 
+        @constraint(model, t_k[k] == x[3,k] / tan_gamma_gs)
+        @constraint(model, [t_k[k]; x[1:2,k]] in SecondOrderCone())
+    end
     # TODO: SOCC Angle Constraint
-    # TODO: Angular velocity constraint
+    # MAX ANGULAR VELOCITY CONSTRAINT
     for k in 1:N
         @constraint(model, [omega_max; x[11:13,k]] in SecondOrderCone())
     end
     # ------------------- CONTROL CONSTRAINTS -------------------- #
-    # TODO: Thrust magnitude upper bound
+    # THRUST UPPER BOUND
     for k in 1:N
         @constraint(model, [T_max; u[:,k]] in SecondOrderCone())
     end
