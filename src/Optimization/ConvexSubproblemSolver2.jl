@@ -36,6 +36,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     omega_max = params["omega_max"]
     tan_gamma_gs = params["tan_gamma_gs"]
     cos_theta_max = params["cos_theta_max"]
+    tan_delta_max = params["tan_delta_max"]
 
     
     model = Model(Gurobi.Optimizer)
@@ -86,6 +87,11 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     end
     # TODO: Linearize thrust lower bound
     #TODO: gimbal angle constraint
+    @variable(model, t_u[1:N]>=0) # aux var 
+    for k in 1:N
+        @constraint(model, t_u[k] == tan_delta_max * u[3, k])
+        @constraint(model, [t_u[k]; u[1:2,k]] in SecondOrderCone())
+    end
     # ------------------- DYNAMICS CONSTRAINTS ------------------- #
     for k in 1:N-1
         @constraint(model, x[:, k+1] .== 
