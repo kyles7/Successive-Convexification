@@ -42,8 +42,8 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     I_body = hcat(params["inertia_matrix"]...)    # Inertia matrix in body frame (3x3)
 
     # Normalize quaternion to avoid drift
-    q_norm = sqrt(q0^2 + q1^2 + q2^2 + q3^2)
-    q0, q1, q2, q3 = q0 / q_norm, q1 / q_norm, q2 / q_norm, q3 / q_norm
+    # q_norm = sqrt(q0^2 + q1^2 + q2^2 + q3^2)
+    # q0, q1, q2, q3 = q0 / q_norm, q1 / q_norm, q2 / q_norm, q3 / q_norm
 
     # Compute rotation matrix from body to inertial frame
     R_b_to_i = quaternion_to_rotation_matrix(q0, q1, q2, q3)
@@ -62,7 +62,8 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     # Angular velocity derivative
     M_b = [MBx, MBy, MBz]
     # dω = I_body \ (M_b - cross(ω_b, I_body * ω_b))
-    dω = I_body \ (M_b - skew_symmetric3d(ω_b) * I_body * ω_b) #TODO: check this
+    #dω = I_body \ (M_b - skew_symmetric3d(ω_b) * I_body * ω_b) #TODO: check this
+    dω = inv(I_body) * (skew_symmetric3d(rTB) * [TBx; TBy; TBz]) - skew_symmetric3d(ω_b) * ω_b
     # Mass dynamics
     # F_b_magnitude = norm(F_b)
     # dm = -F_b_magnitude / (g0 * I_sp)
@@ -149,7 +150,8 @@ function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2},
         m_k = alpha1 * m0 + alpha2 * mf
         r_I_k = alpha1 * r0 + alpha2 * rf
         v_I_k = alpha1 * v0 + alpha2 * vf
-        q_B_I_k = alpha1 * q0 + alpha2 * qf
+        q_B_I_k = [1.0, 0.0, 0.0, 0.0]
+        #q_B_I_k = alpha1 * q0 + alpha2 * qf
         omega_B_k = alpha1 * omega0 + alpha2 * omegaf
 
         X[:, k] = vcat(m_k, r_I_k, v_I_k, q_B_I_k, omega_B_k)
