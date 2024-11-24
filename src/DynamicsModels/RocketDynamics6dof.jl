@@ -4,7 +4,7 @@ using LinearAlgebra
 using ForwardDiff
 using DifferentialEquations
 
-export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!
+export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!, redim_trajectory!
 
 struct RocketDynamics_6dof 
     params::Dict
@@ -380,6 +380,8 @@ function nondimensionalize!(params::Dict)
     m_scale = params["m_wet"]
     println("r_scale: ", r_scale)
     println("m_scale: ", m_scale)
+    params["r_scale"] = r_scale
+    params["m_scale"] = m_scale
 
     params["r_T_B"] /= r_scale
     params["gravity_vector"] /= r_scale
@@ -408,9 +410,13 @@ function redimensionalize!(params::Dict)
     # Redimensionalize parameters
     # r_scale = norm(params["x0"][1:3])
     # m_scale = params["m_wet"]
-    r_scale = 282.842712474619 #TODO: remove hardcoding
-    m_scale = 30000.0 #TODO: remove hardcoding
-    
+    # r_scale = 282.842712474619 #TODO: remove hardcoding
+    # m_scale = 30000.0 #TODO: remove hardcoding
+    println("Redimensionalizing parameters...")
+    r_scale = params["r_scale"]
+    m_scale = params["m_scale"]
+    println("r_scale: ", r_scale)
+    println("m_scale: ", m_scale)
     params["r_T_B"] *= r_scale
     params["gravity_vector"] *= r_scale
     params["inertia_matrix"] *= m_scale * r_scale^2
@@ -432,6 +438,18 @@ function redimensionalize!(params::Dict)
     return nothing
 end
 
+function redim_trajectory!(X::AbstractMatrix{T}, U::AbstractMatrix{T}, params) :: Nothing where T <: Real
+    m_scale = params["m_scale"]
+    r_scale = params["r_scale"]
+    N = params["N"]
+    for k in 1:N
+        state_vec = @view X[:, k]
+        x_redim!(state_vec, m_scale, r_scale)
+        control_vec = @view U[:, k]
+        u_redim!(control_vec, m_scale, r_scale)
+    end
+    return nothing
+end
 
 
 end # module RocketDynamics6dof

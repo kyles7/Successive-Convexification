@@ -39,23 +39,10 @@ function runTestConvexSubproblem()
     r_scale = norm(params["x0"][2:4])
     m_scale = params["m_wet"]
     
-    # Loop through the time steps and redimensionalize the optimized trajectories
-    # TODO: Implement the redimensionalization procedure in RocketDynamics6dof.jl
-    for k in 1:size(x_opt, 2)
-        state_vec = @view x_opt[:, k]
-        x_redim!(state_vec, m_scale, r_scale)
-        control_vec = @view u_opt[:, k]
-        u_redim!(control_vec, m_scale, r_scale)
-    end
-
-    # redimensionalize the initial trajectory
-    for k in 1:size(X, 2)
-        state_vec = @view X[:, k]
-        x_redim!(state_vec, m_scale, r_scale)
-        control_vec = @view U[:, k]
-        u_redim!(control_vec, m_scale, r_scale)
-    end
-
+    # redimensionalize the trajectories
+    redim_trajectory!(x_opt, u_opt, params)
+    redim_trajectory!(X, U, params)
+    
     # Print the results
     # println("Initial trajectory: ")
     # println("---------------------------------")
