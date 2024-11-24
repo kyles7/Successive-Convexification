@@ -5,6 +5,7 @@ include("unit/test_dynamics3dof.jl")
 include("unit/test_convex_subproblem.jl")
 include("unit/test_discretization.jl")
 include("unit/test_nondim.jl")
+include("unit/test_dynamics.jl")
 
 # include("test_scvx.jl")
 
@@ -14,6 +15,7 @@ using .Test3DOFDynamics
 using .TestConvexSubproblem
 using .TestDiscretization
 using .TestNondimensionalization
+using .TestDynamics
 using LinearAlgebra
 using Test
 using YAML
@@ -24,3 +26,4 @@ using YAML
 runTestConvexSubproblem()
 #runTestDiscretization()
 # runTestNondimensionalization()
+#runTestDynamics()

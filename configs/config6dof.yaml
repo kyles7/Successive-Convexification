@@ -1,5 +1,5 @@
 # Simulation Parameters
-N: 30
+N: 10
 dt: 0.1
 sigma: 15.0 # TODO: put real number
 # System Parameters
@@ -21,16 +21,16 @@ inertia_matrix:                     # Inertia matrix in kg·m²
 # Initial Conditions
 x0:
   - 30000.0     # wet Mass
-  - 0.0        # Position x
+  - 200.0        # Position x
   - 200.0        # Position y
-  - 200.0     # Position z
+  - 500.0     # Position z
   - -50.0        # Velocity x
-  - -100.0        # Velocity y
-  - -50.0      # Velocity z
-  - 1.0        # Quaternion q0
+  - -50.0        # Velocity y
+  - -100.0      # Velocity z
+  - 1.0       # Quaternion q0
   - 0.0        # Quaternion q1
   - 0.0        # Quaternion q2
-  - 0.0        # Quaternion q3
+  - 0.0       # Quaternion q3
   - 0.0        # Angular velocity ωx
   - 0.0        # Angular velocity ωy
   - 0.0        # Angular velocity ωz
@@ -120,3 +120,4 @@ tolerance: 1e-4
 weight_nu: 100000.0
 weight_sigma: 10.0
 tr_radius: 5.0
+alpha_m: 0.0003614780112925731 #1 / (282 * 9.81)

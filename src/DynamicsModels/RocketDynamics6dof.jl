@@ -23,7 +23,7 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     # Mass
     m = x[1]
     # Position of engine wrt center of mass TODO: add to params
-    rTB = params["r_T_B"]
+    rTB = params["r_T_B"]  # TODO: check this
     # Extract control inputs
     TBx, TBy, TBz = u[1:3]
     # Compute thrust and moment vectors
@@ -49,25 +49,28 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     R_b_to_i = quaternion_to_rotation_matrix(q0, q1, q2, q3)
 
     # Translational dynamics
-    dr = [vx, vy, vz]
+    dr = [vx, vy, vz]  
     # F_b = [Fbx, Fby, Fbz]
     # dv = (1 / m) * (R_b_to_i * F_b) + g_inertial
-    dv = (1 / m) * [FIx; FIy; FIz] + g_inertial 
+    dv = (1 / m) * [FIx; FIy; FIz] + g_inertial # TODO: check this
 
     # Rotational dynamics
     q = [q0, q1, q2, q3]
     ω_b = [ωx, ωy, ωz]
     # dq = 0.5 * quaternion_product(q, [0.0; ω_b])
-    dq = 0.5 * skew_symmetric4d(ω_b) * q
+    dq = 0.5 * skew_symmetric4d(ω_b) * q  
     # Angular velocity derivative
     M_b = [MBx, MBy, MBz]
     # dω = I_body \ (M_b - cross(ω_b, I_body * ω_b))
-    dω = I_body \ (M_b - skew_symmetric3d(ω_b) * I_body * ω_b)
+    dω = I_body \ (M_b - skew_symmetric3d(ω_b) * I_body * ω_b) #TODO: check this
     # Mass dynamics
     # F_b_magnitude = norm(F_b)
     # dm = -F_b_magnitude / (g0 * I_sp)
     mag_TB = norm([TBx; TBy; TBz])
-    dm = -mag_TB / (g0 * I_sp)
+    #mag_TB = sqrt(TBx^2 + TBy^2 + TBz^2)
+    #dm = -mag_TB / (g0 * I_sp)   # TODO check this
+    #alpha_m = 1 / (282 * 9.81)
+    dm = -params["alpha_m"] * mag_TB
     # Concatenate derivatives
     dx = vcat(dm, dr, dv, dq, dω)
 
@@ -140,8 +143,8 @@ function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2},
     omegaf = params["xf"][12:14]
 
     for k in 1:N
-        alpha1 = (N-k) / N
-        alpha2 = k / N
+        alpha1 = (N-(k-1)) / N
+        alpha2 = (k-1) / N
 
         m_k = alpha1 * m0 + alpha2 * mf
         r_I_k = alpha1 * r0 + alpha2 * rf
@@ -381,6 +384,7 @@ function nondimensionalize!(params::Dict)
     params["r_T_B"] /= r_scale
     params["gravity_vector"] /= r_scale
     params["inertia_matrix"] /= m_scale * r_scale^2
+    params["alpha_m"] *= r_scale
 
     # Nondimensionalize initial and final states
     x_nondim!(params["x0"], m_scale, r_scale)
@@ -410,6 +414,7 @@ function redimensionalize!(params::Dict)
     params["r_T_B"] *= r_scale
     params["gravity_vector"] *= r_scale
     params["inertia_matrix"] *= m_scale * r_scale^2
+    params["alpha_m"] /= r_scale
 
     # Redimensionalize initial and final states
     x_redim!(params["x0"], m_scale, r_scale)
