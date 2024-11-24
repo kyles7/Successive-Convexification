@@ -36,7 +36,7 @@ function runTestConvexSubproblem()
     println("Convex subproblem solved successfully.")
 
     redimensionalize!(params)
-    r_scale = norm(params["x0"][1:3])
+    r_scale = norm(params["x0"][2:4])
     m_scale = params["m_wet"]
     
     # Loop through the time steps and redimensionalize the optimized trajectories

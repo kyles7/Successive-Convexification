@@ -52,33 +52,36 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     # ------------------- BOUNDARY CONDITIONS ------------------- #
     @constraint(model, x[:, 1] .== params["x0"])
     # final position constraint
-    @constraint(model, x[1:3, N] .== params["xf"][1:3])
-    # final velocity constraint
-    @constraint(model, x[4:6, N] .== params["xf"][4:6])
-    # final quaternion constraint
-    @constraint(model, x[7:10, N] .== params["xf"][7:10])
-    # final angular velocity constraint
-    @constraint(model, x[11:13, N] .== params["xf"][11:13])
+    @constraint(model, x[:, N] .== params["xf"])
+    # @constraint(model, x[1:3, N] .== params["xf"][1:3])
+    # # final velocity constraint
+    # @constraint(model, x[4:6, N] .== params["xf"][4:6])
+    # # final quaternion constraint
+    # @constraint(model, x[7:10, N] .== params["xf"][7:10])
+    # # final angular velocity constraint
+    # @constraint(model, x[11:13, N] .== params["xf"][11:13])
     # no final mass constraint 
     # ------------------- STATE CONSTRAINTS ---------------------- #
+    # enforce non-negativity of z position
+    @constraint(model, x[4, :] .>= 0)
     # MIN  MASS CONSTRAINT
-    @constraint(model, x[14, :] .>= params["m_dry"])
+    @constraint(model, x[1, :] .>= params["m_dry"])
 
     # GLIDESLOPE CONSTRAINT
     # auxilarry variable t 
     @variable(model, t_k[1:N]>=0)
     for k in 1:N 
-        @constraint(model, t_k[k] == x[3,k] / tan_gamma_gs)
-        @constraint(model, [t_k[k]; x[1:2,k]] in SecondOrderCone())
+        @constraint(model, t_k[k] == x[4,k] / tan_gamma_gs)
+        @constraint(model, [t_k[k]; x[2:3,k]] in SecondOrderCone())
     end
     # TILT ANGLE CONSTRAINT
     c = sqrt((1 - cos_theta_max) / 2)
     for k in 1:N
-        @constraint(model, [c; x[8:10,k]] in SecondOrderCone())
+        @constraint(model, [c; x[9:11,k]] in SecondOrderCone())
     end
     # MAX ANGULAR VELOCITY CONSTRAINT
     for k in 1:N
-        @constraint(model, [omega_max; x[11:13,k]] in SecondOrderCone())
+        @constraint(model, [omega_max; x[12:14,k]] in SecondOrderCone())
     end
     # ------------------- CONTROL CONSTRAINTS -------------------- #
     # THRUST UPPER BOUND

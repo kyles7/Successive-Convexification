@@ -17,9 +17,9 @@ function plot_trajectory(X::Array{Float64,2}, U::Array{Float64,2}, thrust_scale:
     ax = Axis3(fig[1, 1], xlabel = "X, east", ylabel = "Y, north", zlabel = "Z, up")
 
     # Extract positions over time
-    rx = X[1, :]
-    ry = X[2, :]
-    rz = X[3, :]
+    rx = X[2, :]
+    ry = X[3, :]
+    rz = X[4, :]
 
     # Plot the trajectory path
     lines!(ax, rx, ry, rz, color = :black, linewidth = 1.5, linestyle = :dash, label = "Trajectory")
@@ -27,7 +27,7 @@ function plot_trajectory(X::Array{Float64,2}, U::Array{Float64,2}, thrust_scale:
     # Loop over time steps to plot attitude and thrust vectors
     for k in 1:size(X, 2)  # size(X', 1) is N, the number of time steps
         # Extract quaternion components
-        qw, qx, qy, qz = X[7, k], X[8, k], X[9, k], X[10, k]
+        qw, qx, qy, qz = X[8, k], X[9, k], X[10, k], X[11, k]
 
         # Compute rotation matrix
         CBI = quaternion_to_rotation_matrix(qw, qx, qy, qz)

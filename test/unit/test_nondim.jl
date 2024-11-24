@@ -37,7 +37,7 @@ function runTestNondimensionalization()
     # println("---------------------------------")
 
     redimensionalize!(params)
-    r_scale = norm(params["x0"][1:3])
+    r_scale = norm(params["x0"][2:4])
     m_scale = params["m_wet"]
 
     for k in 1:size(x_1, 2)

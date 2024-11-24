@@ -1,5 +1,5 @@
 # Simulation Parameters
-N: 10
+N: 30
 dt: 0.1
 sigma: 15.0 # TODO: put real number
 # System Parameters
@@ -20,9 +20,10 @@ inertia_matrix:                     # Inertia matrix in kg·m²
 
 # Initial Conditions
 x0:
+  - 30000.0     # wet Mass
   - 0.0        # Position x
   - 200.0        # Position y
-  - 500.0     # Position z
+  - 200.0     # Position z
   - -50.0        # Velocity x
   - -100.0        # Velocity y
   - -50.0      # Velocity z
@@ -33,31 +34,31 @@ x0:
   - 0.0        # Angular velocity ωx
   - 0.0        # Angular velocity ωy
   - 0.0        # Angular velocity ωz
-  - 30000.0     # wet Mass
 
-# Final Conditions
-rf:
-  - 0.0        # Position x
-  - 0.0        # Position y
-  - 0.0        # Position z
+# # Final Conditions
+# rf:
+#   - 0.0        # Position x
+#   - 0.0        # Position y
+#   - 0.0        # Position z
 
-vf:
-  - 0.0        # Velocity x
-  - 0.0        # Velocity y
-  - -5.0        # Velocity z
+# vf:
+#   - 0.0        # Velocity x
+#   - 0.0        # Velocity y
+#   - -5.0        # Velocity z
 
-omegaf:
-  - 0.0        # Angular velocity ωx
-  - 0.0        # Angular velocity ωy
-  - 0.0        # Angular velocity ωz
+# omegaf:
+#   - 0.0        # Angular velocity ωx
+#   - 0.0        # Angular velocity ωy
+#   - 0.0        # Angular velocity ωz
 
-qf:
-  - 1.0        # Quaternion q0
-  - 0.0        # Quaternion q1
-  - 0.0        # Quaternion q2
-  - 0.0        # Quaternion q3
+# qf:
+#   - 1.0        # Quaternion q0
+#   - 0.0        # Quaternion q1
+#   - 0.0        # Quaternion q2
+#   - 0.0        # Quaternion q3
 
 xf:
+  - 22000.0     # dry Mass
   - 0.0        # Position x
   - 0.0        # Position y
   - 0.0        # Position z
@@ -71,7 +72,6 @@ xf:
   - 0.0        # Angular velocity ωx
   - 0.0        # Angular velocity ωy
   - 0.0        # Angular velocity ωz
-  - 22000.0     # dry Mass
 
 # Control Input Guess
 # u_guess:

@@ -13,15 +13,15 @@ end
 function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: AbstractVector{Real}
     # Extract state variables
     # Position in inertial frame
-    rx, ry, rz = x[1:3]
+    rx, ry, rz = x[2:4]
     # Velocity in inertial frame
-    vx, vy, vz = x[4:6]
+    vx, vy, vz = x[5:7]
     # Quaternion (attitude)
-    q0, q1, q2, q3 = x[7:10]
+    q0, q1, q2, q3 = x[8:11]
     # Angular velocity in body frame
-    ωx, ωy, ωz = x[11:13]
+    ωx, ωy, ωz = x[12:14]
     # Mass
-    m = x[14]
+    m = x[1]
     # Position of engine wrt center of mass TODO: add to params
     rTB = params["r_T_B"]
     # Extract control inputs
@@ -69,7 +69,7 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     mag_TB = norm([TBx; TBy; TBz])
     dm = -mag_TB / (g0 * I_sp)
     # Concatenate derivatives
-    dx = vcat(dr, dv, dq, dω, dm)
+    dx = vcat(dm, dr, dv, dq, dω)
 
     return dx
 end
@@ -129,15 +129,15 @@ function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2},
     U = zeros(n_controls, N) # 3 x 10 
 
     m0 = params["m_wet"]
-    r0 = params["x0"][1:3]
-    v0 = params["x0"][4:6]
-    q0 = params["x0"][7:10]
-    omega0 = params["x0"][11:13]
+    r0 = params["x0"][2:4]
+    v0 = params["x0"][5:7]
+    q0 = params["x0"][8:11]
+    omega0 = params["x0"][12:14]
     mf = params["m_dry"]
-    rf = params["xf"][1:3]
-    vf = params["xf"][4:6]
-    qf = params["xf"][7:10]
-    omegaf = params["xf"][11:13]
+    rf = params["xf"][2:4]
+    vf = params["xf"][5:7]
+    qf = params["xf"][8:11]
+    omegaf = params["xf"][12:14]
 
     for k in 1:N
         alpha1 = (N-k) / N
@@ -149,7 +149,7 @@ function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2},
         q_B_I_k = alpha1 * q0 + alpha2 * qf
         omega_B_k = alpha1 * omega0 + alpha2 * omegaf
 
-        X[:, k] = vcat(r_I_k, v_I_k, q_B_I_k, omega_B_k, m_k)
+        X[:, k] = vcat(m_k, r_I_k, v_I_k, q_B_I_k, omega_B_k)
         U[:, k] = ((T_max - T_min) /2) * [0.0, 0.0, 1.0]
     end
 
@@ -203,7 +203,8 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
     K = size(X, 2)
     n_x = size(X, 1)
     n_u = size(U, 1)
-    dt = sigma / (K - 1)
+
+    dt = 1 / (K - 1) 
 
     #preallocate matrices
     A_bar = zeros(n_x * n_x, K-1)
@@ -320,11 +321,11 @@ function x_nondim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing wher
         Nondimensionalize the state vector x.
     """
     # Nondimensionalize position
-    x[1:3] /= r_scale
+    x[2:4] /= r_scale
     # Nondimensionalize velocity
-    x[4:6] /= r_scale
+    x[5:7] /= r_scale
     # Nondimensionalize mass
-    x[14] /= m_scale
+    x[1] /= m_scale
     return nothing
 end
 
@@ -341,11 +342,11 @@ function x_redim!(x::AbstractVector{T}, m_scale::T, r_scale::T) :: Nothing where
     Redimensionalize the state vector x.
     """
     # Redimensionalize position
-    x[1:3] *= r_scale
+    x[2:4] *= r_scale
     # Redimensionalize velocity
-    x[4:6] *= r_scale
+    x[5:7] *= r_scale
     # Redimensionalize mass
-    x[14] *= m_scale
+    x[1] *= m_scale
 
     return nothing
 end
@@ -372,7 +373,7 @@ function nondimensionalize!(params::Dict)
     Nondimensionalize the parameters in the params dictionary.
     """
     # Nondimensionalize parameters
-    r_scale = norm(params["x0"][1:3])
+    r_scale = norm(params["x0"][2:4])
     m_scale = params["m_wet"]
     println("r_scale: ", r_scale)
     println("m_scale: ", m_scale)
@@ -403,7 +404,7 @@ function redimensionalize!(params::Dict)
     # Redimensionalize parameters
     # r_scale = norm(params["x0"][1:3])
     # m_scale = params["m_wet"]
-    r_scale = 538.5164 #TODO: remove hardcoding
+    r_scale = 282.842712474619 #TODO: remove hardcoding
     m_scale = 30000.0 #TODO: remove hardcoding
     
     params["r_T_B"] *= r_scale
