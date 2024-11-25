@@ -155,7 +155,7 @@ function initialize_trajectory6dof(params::Dict) :: Tuple{AbstractArray{Real,2},
         omega_B_k = alpha1 * omega0 + alpha2 * omegaf
 
         X[:, k] = vcat(m_k, r_I_k, v_I_k, q_B_I_k, omega_B_k)
-        U[:, k] = ((T_max - T_min) /2) * [0.0, 0.0, 1.0]
+        U[:, k] = ((T_max + T_min) /2) * [0.0, 0.0, 1.0]
     end
 
     return X, U
