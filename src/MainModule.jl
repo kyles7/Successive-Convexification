@@ -9,11 +9,12 @@ module MainModule
     ######## use this block for test_6dofdynamics #######
     include("Utilities/Parameters.jl")
     include("Utilities/TrajectoryVisualization.jl")
+    include("Utilities/VarPlotter.jl")
     include("DynamicsModels/RocketDynamics3dof.jl")  # use this for test_dynamics
     include("DynamicsModels/RocketDynamics6dof.jl")  # use this for test_6dofdynamics
     include("Optimization/ConvexSubproblemSolver2.jl")
-    using .Parameters, .TrajectoryVisualization, .RocketDynamics6dof, .RocketDynamics3dof, .ConvexSubproblemSolver
-    export Parameters, plot_trajectory, RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, RocketDynamics_3dof, dynamics3dof, state_jacobian3dof, control_jacobian3dof, initialize_trajectory3dof, solve_convex_subproblem, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!, redim_trajectory!
+    using .Parameters, .TrajectoryVisualization, .VarPlotter, .RocketDynamics6dof, .RocketDynamics3dof, .ConvexSubproblemSolver
+    export Parameters, plot_trajectory, plot_thrust_magnitude, RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, RocketDynamics_3dof, dynamics3dof, state_jacobian3dof, control_jacobian3dof, initialize_trajectory3dof, solve_convex_subproblem, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!, redim_trajectory!
 
     ######## use this block for test_convex_subproblems #######
 #     include("Utilities/Parameters.jl")
