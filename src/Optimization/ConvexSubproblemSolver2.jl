@@ -93,13 +93,12 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     u_last_p_unit = zeros(n_controls, N)
     for k in 1:N
         u_last_p_k = U_last[:, k]
-        norm_u_last_p_k = norm(u_last_p_unit) + eps
+        norm_u_last_p_k = norm(u_last_p_k) + eps
         u_last_p_unit[:, k] = u_last_p_k / norm_u_last_p_k
     end
     for k in 1:N
         lhs_k = sum(u_last_p_unit[:, k] .* u[:, k])  # scalar projecton
         @constraint(model, T_min - lhs_k <= s_prime[k])
-
     end
     # GIMBAL ANGLE CONSTRAINT
     @variable(model, t_u[1:N]>=0) # aux var 
