@@ -429,8 +429,8 @@ function redimensionalize!(params::Dict)
     x_redim!(params["xf"], m_scale, r_scale)
 
     # Redimensionalize control limits
-    u_redim!(params["T_max"], m_scale, r_scale)
-    u_redim!(params["T_min"], m_scale, r_scale)
+    params["T_max"] = u_redim!(params["T_max"], m_scale, r_scale)
+    params["T_min"] = u_redim!(params["T_min"], m_scale, r_scale)
 
     # Redimensionalize masses
     params["m_wet"] *= m_scale
