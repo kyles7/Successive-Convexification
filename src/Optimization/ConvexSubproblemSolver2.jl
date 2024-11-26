@@ -7,6 +7,7 @@ using Gurobi
 using LinearAlgebra
 using ..MainModule
 using ForwardDiff
+using ECOS
 #using ..AbstractDynamicsModel
 # include("../DynamicsModels/AbstractDynamicsModel.jl")
 # using .AbstractDynamicsModel
@@ -39,7 +40,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     tan_delta_max = params["tan_delta_max"]
 
     
-    model = Model(Gurobi.Optimizer)
+    model = Model(ECOS.Optimizer)
     set_silent(model)
     # define decision variables: state, control, nu, sigma 
     @variable(model, x[1:n_states, 1:N])
@@ -100,10 +101,10 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
         lhs_k = sum(u_last_p_unit[:, k] .* u[:, k])  # scalar projecton
         @constraint(model, T_min - lhs_k <= s_prime[k])
     end
-    # GIMBAL ANGLE CONSTRAINT
+    # # GIMBAL ANGLE CONSTRAINT
     @variable(model, t_u[1:N]>=0) # aux var 
     for k in 1:N
-        @constraint(model, t_u[k] == tan_delta_max * u[3, k])
+        @constraint(model, t_u[k] == 2*tan_delta_max * u[3, k])
         @constraint(model, [t_u[k]; u[1:2,k]] in SecondOrderCone())
     end
     # ------------------- DYNAMICS CONSTRAINTS ------------------- #
@@ -121,31 +122,44 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     dx = x - X_last
     ds = sigma - sigma_last 
     # TRUST REGION CONSTRAINT
-    @variable(model, dx_abs[1:n_states, 1:N] >=0)
-    @variable(model, du_abs[1:n_controls, 1:N] >=0)
-    @variable(model, ds_abs >=0)
+    # @variable(model, dx_abs[1:n_states, 1:N] >=0)
+    # @variable(model, du_abs[1:n_controls, 1:N] >=0)
+    # @variable(model, ds_abs >=0)
 
-    for i in 1:n_states
-        for k in 1:N
-            @constraint(model, dx_abs[i,k] >= dx[i,k])
-            @constraint(model, dx_abs[i,k] >= -dx[i,k])
-        end
-    end
-    for i in 1:n_controls
-        for k in 1:N
-            @constraint(model, du_abs[i,k] >= du[i,k])
-            @constraint(model, du_abs[i,k] >= -du[i,k])
-        end
-    end
-    @constraint(model, ds_abs >= ds)
-    @constraint(model, ds_abs >= -ds)
+    # for i in 1:n_states
+    #     for k in 1:N
+    #         @constraint(model, dx_abs[i,k] >= dx[i,k])
+    #         @constraint(model, dx_abs[i,k] >= -dx[i,k])
+    #     end
+    # end
+    # for i in 1:n_controls
+    #     for k in 1:N
+    #         @constraint(model, du_abs[i,k] >= du[i,k])
+    #         @constraint(model, du_abs[i,k] >= -du[i,k])
+    #     end
+    # end
+    # @constraint(model, ds_abs >= ds)
+    # @constraint(model, ds_abs >= -ds)
 
-    norm_dx = sum(dx_abs)
-    norm_du = sum(du_abs)
-    norm_ds = ds_abs
-    @constraint(model, norm_dx + norm_du + norm_ds <= params["tr_radius"])
-   # @constraint(model, norm(du) + norm(dx) + norm(ds) <= params["tr_radius"])
+    # norm_dx = sum(dx_abs)
+    # norm_du = sum(du_abs)
+    # norm_ds = ds_abs
+    
+    #Try 2: compute norms via dot products
+    # for k in 1:N
+    #     du_k_norm = du[:,k] * du[:,k]
+    #     dx_k_norm = dx[:,k] * dx[:,k]
+    #     @constraint(model, du_k_norm <= params["tr_radius"])
+    #     @constraint(model, dx_k_norm <= params["tr_radius"])
+    # end
 
+    # Try 2: 2 norms
+    @constraint(model, [params["tr_radius"]; vec(dx); vec(du); ds] in SecondOrderCone())
+    # ds_norm = ds * ds
+    # @constraint(model, ds_norm <= params["tr_radius"])
+    # @constraint(model, norm_dx + norm_du + norm_ds <= params["tr_radius"])
+#    @constraint(model, norm(du) + norm(dx) + norm(ds) <= params["tr_radius"])
+#     @constraint(model, norm_ds^2 + norm_du^2 + norm_dx^2 <= params["tr_radius"]^2)
     # ------------------- OBJECTIVE FUNCTION --------------------- #
     @variable(model, nu_abs[1:n_states, 1:N-1] >=0)
     for i in 1:n_states

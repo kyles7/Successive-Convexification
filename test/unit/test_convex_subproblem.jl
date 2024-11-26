@@ -63,8 +63,8 @@ function runTestConvexSubproblem()
     # Currently, one of the plots can be displayed at a time, so uncomment only one
 
     # plot_trajectory(X, U, thrust_scale, attitude_scale) # Plot the initial trajectory
-    # plot_trajectory(x_opt, u_opt, thrust_scale, attitude_scale) # Plot the optimized trajectory
-    plot_thrust_magnitude(u_opt, params) # Plot the thrust magnitude over time
+    plot_trajectory(x_opt, u_opt, thrust_scale, attitude_scale) # Plot the optimized trajectory
+    #plot_thrust_magnitude(u_opt, params) # Plot the thrust magnitude over time
 
 
     # Test the results
