@@ -25,7 +25,7 @@ x0:
   - 200.0        # Position y
   - 500.0     # Position z
   - -50.0        # Velocity x
-  - -50.0        # Velocity y
+  - -50.0        # Velocitys y
   - -100.0      # Velocity z
   - 1.0       # Quaternion q0
   - 0.0        # Quaternion q1

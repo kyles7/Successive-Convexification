@@ -53,7 +53,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     # ------------------- BOUNDARY CONDITIONS ------------------- #
     @constraint(model, x[:, 1] .== params["x0"])
     # final position constraint
-    @constraint(model, x[:, N] .== params["xf"])
+    @constraint(model, x[2:end, N] .== params["xf"][2:end])
     # @constraint(model, x[1:3, N] .== params["xf"][1:3])
     # # final velocity constraint
     # @constraint(model, x[4:6, N] .== params["xf"][4:6])
@@ -73,16 +73,16 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     @variable(model, t_k[1:N]>=0)
     for k in 1:N 
         @constraint(model, t_k[k] == x[4,k] / tan_gamma_gs)
-        @constraint(model, [t_k[k]; x[2:3,k]] in SecondOrderCone())
+        @constraint(model, [t_k[k]; x[2,k]; x[3,k]] in SecondOrderCone())
     end
     # TILT ANGLE CONSTRAINT
     c = sqrt((1 - cos_theta_max) / 2)
     for k in 1:N
-        @constraint(model, [c; x[9:11,k]] in SecondOrderCone())
+        @constraint(model, [c; x[9,k]; x[10,k]] in SecondOrderCone())
     end
     # MAX ANGULAR VELOCITY CONSTRAINT
     for k in 1:N
-        @constraint(model, [omega_max; x[12:14,k]] in SecondOrderCone())
+        @constraint(model, [omega_max; x[12,k]; x[13,k]; x[14,k]] in SecondOrderCone())
     end
     # ------------------- CONTROL CONSTRAINTS -------------------- #
     # THRUST UPPER BOUND
@@ -101,6 +101,12 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
         lhs_k = sum(u_last_p_unit[:, k] .* u[:, k])  # scalar projecton
         @constraint(model, T_min - lhs_k <= s_prime[k])
     end
+    # GIMBAL ANGLE CONSTRAINT
+    # @variable(model, t_u[1:N]>=0) # aux var 
+    # for k in 1:N
+    #     @constraint(model, t_u[k] == tan_delta_max * u[3, k])
+    #     @constraint(model, [t_u[k]; u[1,k]; u[2, k]] in SecondOrderCone())
+    # end
     # # GIMBAL ANGLE CONSTRAINT
     @variable(model, t_u[1:N]>=0) # aux var 
     for k in 1:N
