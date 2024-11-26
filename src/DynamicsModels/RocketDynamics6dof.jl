@@ -4,7 +4,7 @@ using LinearAlgebra
 using ForwardDiff
 using DifferentialEquations
 
-export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!, redim_trajectory!
+export RocketDynamics_6dof, dynamics6dof, state_jacobian6dof, control_jacobian6dof, initialize_trajectory6dof, quaternion_to_rotation_matrix, calculate_discretization, x_nondim!, u_nondim!, x_redim!, u_redim!, nondimensionalize!, redimensionalize!, redim_trajectory!, integrate_nonlinear_piecewise
 
 struct RocketDynamics_6dof 
     params::Dict
@@ -453,5 +453,41 @@ function redim_trajectory!(X::AbstractMatrix{T}, U::AbstractMatrix{T}, params) :
     return nothing
 end
 
+# function integrate_nonlinear_piecewise(X_l, U, sigma)
+#     """
+#     Integrate the nonlinear dynamics piecewise.
+#     """
+#     n_states, K = size(X_l)
+#     X_nl = zeros(n_states, K)
+#     X_nl[:, 1] = X_l[:, 1]
+#     for k in 1:(K - 1)
+#         # Define the ODE function
+#         function dx!(dxdt, x, p, t)
+#             U_k = p.U_k
+#             U_kp1 = p.U_kp1
+#             # Interpolate control inputs
+#             alpha = t / (dt * sigma)
+#             u_t = (1 - alpha) * U_k + alpha * U_kp1
+#             # Compute state derivatives using your dynamics function
+#             dxdt .= dynamics6dof(x, u_t, params)
+#         end
+#         # Initial state at time step k
+#         x0 = X_l[:, k]
 
+#         # Parameters to pass to the ODE function
+#         p = (U_k = U[:, k], U_kp1 = U[:, k + 1])
+
+#         # Time span for integration
+#         tspan = (0.0, dt * sigma)
+
+#         # Create the ODE problem
+#         prob = ODEProblem(dx!, x0, tspan, p)
+
+#         # Solve the ODE problem, saving the solution at t = dt * sigma
+#         sol = solve(prob, Tsit5(); saveat = [dt * sigma])
+
+#         # Extract the solution at t = dt * sigma
+#         X_nl[:, k + 1] = sol.u[end]
+#     end
+#     return X_nl
 end # module RocketDynamics6dof
