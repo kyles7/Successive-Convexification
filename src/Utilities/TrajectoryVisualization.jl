@@ -14,7 +14,7 @@ function plot_trajectory(X::Array{Float64,2}, U::Array{Float64,2}, thrust_scale:
     # U ∈ ℝ^(3 x N) is the control trajectory
 
     fig = Figure(size = (800, 600))
-    ax = Axis3(fig[1, 1], xlabel = "X, east", ylabel = "Y, north", zlabel = "Z, up")
+    ax = Axis3(fig[1, 1], xlabel = "X, east", ylabel = "Y, north", zlabel = "Z, up", aspect = :data)
 
     # Extract positions over time
     rx = X[2, :]
