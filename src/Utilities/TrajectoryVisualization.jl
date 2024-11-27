@@ -45,7 +45,7 @@ function plot_trajectory(X::Array{Float64,2}, U::Array{Float64,2}, thrust_scale:
         thrust_vec3 = Vec3f0(thrust_vector_scaled...)
 
         # Plot vectors at every Nth time step to reduce clutter
-        if k % 1 == 0  # Adjust the step as needed
+        if k % 2 == 0  # Adjust the step as needed
             position = Point3f0(rx[k], ry[k], rz[k])
             scatter!(ax, position, color = :blue)
             # Plot attitude vector
