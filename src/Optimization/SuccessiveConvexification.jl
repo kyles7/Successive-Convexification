@@ -74,7 +74,7 @@ function successive_convexification()
             println("Final time: ", sigma)
             print("")
             # Check the ratio and update the trajectory
-            if abs(predicted_change) < 1e-3
+            if abs(predicted_change) < 1e-4
                 converged = true
                 break
             else
