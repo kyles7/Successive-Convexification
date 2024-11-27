@@ -6,7 +6,7 @@ include("unit/test_convex_subproblem.jl")
 include("unit/test_discretization.jl")
 include("unit/test_nondim.jl")
 include("unit/test_dynamics.jl")
-
+include("unit/test_scvx.jl")
 # include("test_scvx.jl")
 
 using .MainModule
@@ -16,6 +16,7 @@ using .TestConvexSubproblem
 using .TestDiscretization
 using .TestNondimensionalization
 using .TestDynamics
+using .TestSCVX
 using LinearAlgebra
 using Test
 using YAML
@@ -23,7 +24,8 @@ using YAML
 # run the tests 
 # runTest6DOFDynamics()
 # runTest3DOFDynamics()
-runTestConvexSubproblem()
+#runTestConvexSubproblem()
 #runTestDiscretization()
 # runTestNondimensionalization()
 # runTestDynamics()
+runTestSCVX()

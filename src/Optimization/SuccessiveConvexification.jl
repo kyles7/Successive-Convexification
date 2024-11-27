@@ -2,12 +2,14 @@
 
 module SuccessiveConvexification
 
+export successive_convexification
 using Test
 using YAML
 using LinearAlgebra
 using ..MainModule
 using DifferentialEquations
 using Plots
+
 
 function successive_convexification()
     config_path = joinpath(@__DIR__, "..", "..", "configs", "config6dof.yaml")
@@ -16,14 +18,15 @@ function successive_convexification()
     #----------------------- Initialization ---------------------#
     nondimensionalize!(params)
     X, U = initialize_trajectory6dof(params)
-    X = Array{Float64,2}(x_ref)
-    U = Array{Float64,2}(u_ref)
+    X = Array{Float64,2}(X)
+    U = Array{Float64,2}(U)
     sigma = params["sigma"]
+    all_X = [copy(X)]
+    all_U = [copy(U)]
+    all_sigma = [sigma]
     max_iters = params["max_iters"]
-    tolerance = params["tolerance"]
-
     #----------------------- Main Loop ---------------------#
-    last_nonlinear_cost = none 
+    last_nonlinear_cost = nothing  
     converged = false 
     for it in 1:max_iters
         # get current time 
@@ -33,37 +36,25 @@ function successive_convexification()
         # Let discritized matrices
         A_bar, B_bar, C_bar, S_bar, z_bar = calculate_discretization(X, U, sigma, params)
         println("Time to calculate discretization: ", time() - t0_tm)
-        z
         X_last = X
         U_last = U
         sigma_last = sigma
-        weight_nu = params["weight_nu"]
-        weight_sigma = params["weight_sigma"]
-        tr_radius = params["tr_radius"]
 
         while true
             # Solve the convex subproblem
-            # X_new, U_new, sigma_new, error = solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, z_bar, X, U, X_last, U_last sigma, params)
+            X_new, U_new, sigma_new, nu_new, sprime_new = solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, z_bar, X, U, X_last, U_last, sigma_last, sigma_last, params)
             
-            # # Compute the linearized cost
-            # cost_linearized = compute_linearized_cost(X, U, X_new, U_new, sigma, A_bar, B_bar, C_bar, S_bar, z_bar, params)
-            
-            # # Compute the actual reduction
-            # actual_reduction = last_nonlinear_cost - cost_new
-            
-            # # Compute the predicted reduction
-            # predicted_reduction = last_nonlinear_cost - cost_linearized
-            
-            # # Compute the ratio
-            # ratio = actual_reduction / predicted_reduction
-            
-            # Update the trust region radius
-            # if ratio < 0.25
-            #     tr_radius *= 0.5
-            # elseif ratio > 0.75 && norm(U_new - U) < 0.9 * tr_radius
-            #     tr_radius = min(2 * tr_radius, params["tr_max"])
-            # end
-            if last_nonlinear_cost == none
+            X_nl = integrate_nonlinear_piecewise(X_new, U_new, sigma_new, params)
+            linear_cost_dynamics = norm(nu_new,1)
+            nonlinear_cost_dynamics = norm(X_new - X_nl, 1)
+
+            linear_cost_constraints = sprime_new
+            nonlinear_cost_constraints = get_nonlinear_cost(X_new, U_new, params)
+
+            linear_cost = linear_cost_dynamics + linear_cost_constraints
+            nonlinear_cost = nonlinear_cost_dynamics + nonlinear_cost_constraints
+
+            if isnothing(last_nonlinear_cost)
                 last_nonlinear_cost = nonlinear_cost 
                 X = X_new
                 U = U_new
@@ -74,58 +65,72 @@ function successive_convexification()
             predicted_change = last_nonlinear_cost - linear_cost  # delta_L
             
             print("")
-            print(format_line("Virtual Control Cost", linear_cost_dynamics))
-            print(format_line("Constraint Cost", linear_cost_constraints))
+            println("Virtual Control Cost: ", linear_cost_dynamics)
+            println("Constraint Cost: ", linear_cost_constraints)
             print("")
-            print(format_line("Actual change", actual_change))
-            print(format_line("Predicted change", predicted_change))
+            println("Actual change: ", actual_change)
+            println("Predicted change: ", predicted_change)
             print("")
-            print(format_line("Final time", sigma))
+            println("Final time: ", sigma)
             print("")
             # Check the ratio and update the trajectory
-            if ratio > 0.1
-                X = X_new
-                U = U_new
-                sigma = sigma_new
-                last_nonlinear_cost = cost_new
+            if abs(predicted_change) < 1e-3
+                converged = true
                 break
+            else
+                rho = actual_change / predicted_change
+                if rho < params["rho_0"]
+                    params["tr_radius"] /= params["alpha"]
+                    println("Shrinking trust region to ", params["tr_radius"])
+                else
+                    X = X_new
+                    U = U_new
+                    sigma = sigma_new
+                    println("Accepting solution")
+                    
+                    if rho < params["rho_1"]
+                        params["tr_radius"] /= params["alpha"]
+                        println("Decreasing trust region to ", params["tr_radius"])
+                    elseif rho > params["rho_2"]
+                        params["tr_radius"] *= params["beta"]
+                        println("Increasing trust region to ", params["tr_radius"])
+                    end
+                    last_nonlinear_cost = nonlinear_cost
+                    break
+                end
             end
+            println('-' ^ 80)
         end
+        println("Time for iteration $it: ", time() - t0_it)
+        
+        push!(all_X, copy(X))
+        push!(all_U, copy(U))
+        push!(all_sigma, sigma)
         # Check convergence
-        if has_converged(X, X_new, tolerance)
+        if converged
             println("Converged in $it iterations.")
             converged = true
             break
         end
-        
-        # Update current trajectory
-        X = X_new
-        U = U_new
+
+    end
+    if !converged
+        println("Did not converge in $max_iters iterations.")
     end
 
+    #extract last trajectory
+    X = all_X[end]
+    U = all_U[end]
+    sigma = all_sigma[end]
+    #redimensionalize the trajectories
+    # redimensionalize!(params)
+    # redim_trajectory!(X, U, params)
 
-    x_current = x_init
-    u_current = u_init
-    
-    for iter in 1:max_iters
-        # Linearize dynamics around current trajectory
-        A_list, B_list, c_list = linearize_dynamics(model, x_current, u_current, params)
-        
-        # Set up and solve the convex optimization problem
-        x_next, u_next = solve_convex_subproblem(A_list, B_list, c_list, x_current, u_current, params)
-        
-        # Check convergence
-        if has_converged(x_current, x_next, tolerance)
-            println("Converged in $iter iterations.")
-            break
-        end
-        
-        # Update current trajectory
-        x_current = x_next
-        u_current = u_next
-    end
-    
-    return x_current, u_current
-end
-
+    #plot the trajectory
+    println("Plotting...")
+    thrust_scale = 0.0002
+    attitude_scale = 100
+    plot_trajectory(X, U, thrust_scale, attitude_scale)
+    return all_X, all_U, all_sigma
+end 
 end # module SuccessiveConvexification

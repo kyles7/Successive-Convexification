@@ -8,6 +8,7 @@ using LinearAlgebra
 using ..MainModule
 using ForwardDiff
 using ECOS
+using Ipopt
 #using ..AbstractDynamicsModel
 # include("../DynamicsModels/AbstractDynamicsModel.jl")
 # using .AbstractDynamicsModel
@@ -40,7 +41,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     tan_delta_max = params["tan_delta_max"]
 
     
-    model = Model(ECOS.Optimizer)
+    model = Model(Gurobi.Optimizer)
     set_silent(model)
     # define decision variables: state, control, nu, sigma 
     @variable(model, x[1:n_states, 1:N])
@@ -64,7 +65,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     # no final mass constraint 
     # ------------------- STATE CONSTRAINTS ---------------------- #
     # enforce non-negativity of z position
-    @constraint(model, x[4, :] .>= 0)
+    #@constraint(model, x[4, :] .>= 0)
     # MIN  MASS CONSTRAINT
     @constraint(model, x[1, :] .>= params["m_dry"])
 
@@ -113,6 +114,15 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
         @constraint(model, t_u[k] == 2*tan_delta_max * u[3, k])
         @constraint(model, [t_u[k]; u[1:2,k]] in SecondOrderCone())
     end
+
+    # @variable(model, t_u[1:N]>=0) # aux var 
+    # for k in 1:N
+    #     #@constraint(model, t_u[k] == 2*tan_delta_max * u[3, k])
+    #     @constraint(model, [2*tan_delta_max * u[3, k]; u[1,k]; u[2,k]] in SecondOrderCone())
+    #    # @constraint(model, u[1,k]^2 + u[2,k]^2 <= 2 * tan_delta_max * u[3,k]^2)
+    # end
+
+    
     # ------------------- DYNAMICS CONSTRAINTS ------------------- #
     for k in 1:N-1
         @constraint(model, x[:, k+1] .== 
@@ -199,8 +209,14 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     for k in 1:N
         u_opt[:, k] = value.(u[:, k])
     end
+    sigma_new = value(sigma)
+    nu_new = Array{Float64}(undef, n_states, N-1)
+    for k in 1:N-1
+        nu_new[:, k] = value.(nu[:, k])
+    end
 
-    return x_opt, u_opt
+    sprime_new = sum(value.(s_prime))
+    return x_opt, u_opt, sigma_new, nu_new, sprime_new  
 end
 
 

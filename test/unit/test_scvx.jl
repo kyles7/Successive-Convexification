@@ -1,43 +1,47 @@
-# test/test_scvx.jl
+# test/test_convex_subproblem.jl
+module TestSCVX
 
-include("../src/Utilities/Parameters.jl")
-include("../src/DynamicsModels/AbstractDynamicsModel.jl")
-include("../src/DynamicsModels/RocketDynamics.jl")
-include("../src/Utilities/Linearization.jl")
-include("../src/Optimization/ConvexSubproblemSolver.jl")
+export runTestSCVX
 
-using .Parameters
-using .AbstractDynamicsModel
-using .RocketDynamics
-using .Linearization
-using .ConvexSubproblemSolver
+# Change the working directory to the script's directory
+cd(@__DIR__)
 
-# Load parameters
-config_path = joinpath(@__DIR__, "..", "config.yaml")
-params = load_parameters(config_path)
 
-# Set additional parameters
-params["Q"] = Diagonal(repeat([1.0], params["n_states"]))
-params["R"] = Diagonal(repeat([0.1], params["n_controls"]))
-params["QN"] = Diagonal(repeat([10.0], params["n_states"]))
-params["max_iterations"] = 20
-params["convergence_tolerance"] = 1e-3
+using ..MainModule
+using LinearAlgebra
 
-# Define control limits
-F_max = 1e5  # Replace with appropriate value
-M_max = 1e4  # Replace with appropriate value
-params["u_min"] = [-F_max, -F_max, -F_max, -M_max, -M_max, -M_max]
-params["u_max"] = [F_max, F_max, F_max, M_max, M_max, M_max]
+using Test
 
-# Create dynamics model instance
-dynamics_model = RocketDynamics(params)
-params["dynamics_model"] = dynamics_model
 
-# Run Scvx algorithm
-x_opt, u_opt = scvx_algorithm(params)
+function runTestSCVX()
+    # Load parameters
+    config_path = joinpath(@__DIR__, "..", "..", "configs", "config6dof.yaml")
+    params = Parameters.load_parameters(config_path)
+    sigma = params["sigma"]
+   # nondimensionalize!(params)
+    # Initialize reference trajectories
+    all_X, all_U, all_sigma = successive_convexification()
 
-# Print results
-println("Optimized state trajectory:")
-display(x_opt)
-println("Optimized control trajectory:")
-display(u_opt)
+    # get last trajectory
+    X = all_X[end]
+    U = all_U[end]
+    sigma = all_sigma[end]
+
+    redimensionalize!(params)
+    r_scale = norm(params["x0"][2:4])
+    m_scale = params["m_wet"]
+    # redimensionalize the trajectories
+    redim_trajectory!(X, U, params)
+
+    thrust_scale = 0.0002
+    attitude_scale = 100
+
+    println("Plotting...")
+    # Currently, one of the plots can be displayed at a time, so uncomment only one
+
+    # plot_trajectory(X, U, thrust_scale, attitude_scale) # Plot the initial trajectory
+    plot_trajectory(X, U, thrust_scale, attitude_scale) # Plot the optimized trajectory
+    #plot_thrust_magnitude(u_opt, params) # Plot the thrust magnitude over time
+end # function runTestConvexSubproblem
+
+end # module TestConvexSubproblem

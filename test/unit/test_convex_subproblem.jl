@@ -32,8 +32,12 @@ function runTestConvexSubproblem()
     A_list, B_list, C_list, S_list, Z_list = calculate_discretization(X, U, params["sigma"], params)
 
     # Solve the convex subproblem
-    x_opt, u_opt = solve_convex_subproblem(A_list, B_list, C_list, S_list, Z_list, X, U, X, U, sigma, sigma, params)
+    x_opt, u_opt, sigma_new, nu_new, sprime_new = solve_convex_subproblem(A_list, B_list, C_list, S_list, Z_list, X, U, X, U, sigma, sigma, params)
     println("Convex subproblem solved successfully.")
+
+    #print nu
+    println("nu_new = ", norm(nu_new,1))
+    println("sprime_new = ", sprime_new)
 
     redimensionalize!(params)
     r_scale = norm(params["x0"][2:4])

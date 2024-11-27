@@ -123,3 +123,9 @@ weight_nu: 100000.0
 weight_sigma: 10.0
 tr_radius: 5.0
 alpha_m: 0.0003614780112925731 #1 / (282 * 9.81)
+
+rho_0: 0.0
+rho_1: 0.25
+rho_2: 0.9
+alpha: 2.0
+beta: 3.2
