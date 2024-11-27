@@ -18,7 +18,7 @@ function runTestSCVX()
     config_path = joinpath(@__DIR__, "..", "..", "configs", "config6dof.yaml")
     params = Parameters.load_parameters(config_path)
     sigma = params["sigma"]
-   # nondimensionalize!(params)
+    nondimensionalize!(params)
     # Initialize reference trajectories
     all_X, all_U, all_sigma = successive_convexification()
 
@@ -33,8 +33,8 @@ function runTestSCVX()
     # redimensionalize the trajectories
     redim_trajectory!(X, U, params)
 
-    thrust_scale = 0.0002
-    attitude_scale = 100
+    thrust_scale = 0.00004
+    attitude_scale = 30
 
     println("Plotting...")
     # Currently, one of the plots can be displayed at a time, so uncomment only one
