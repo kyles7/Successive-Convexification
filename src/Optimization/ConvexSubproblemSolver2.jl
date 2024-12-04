@@ -79,7 +79,7 @@ function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X, U, X_last
     # TILT ANGLE CONSTRAINT
     c = sqrt((1 - cos_theta_max) / 2)
     for k in 1:N
-        @constraint(model, [c; x[9,k]; x[10,k]] in SecondOrderCone())
+        @constraint(model, [c; x[10,k]; x[11,k]] in SecondOrderCone())
     end
     # MAX ANGULAR VELOCITY CONSTRAINT
     for k in 1:N
