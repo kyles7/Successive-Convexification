@@ -130,7 +130,7 @@ function successive_convexification()
     println("Plotting...")
     thrust_scale = 0.0002
     attitude_scale = 100
-    plot_trajectory(X, U, thrust_scale, attitude_scale)
+    # plot_trajectory(X, U, thrust_scale, attitude_scale)
     return all_X, all_U, all_sigma
 end 
 end # module SuccessiveConvexification
