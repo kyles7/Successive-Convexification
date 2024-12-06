@@ -42,7 +42,7 @@ function successive_convexification()
 
         while true
             # Solve the convex subproblem
-            X_new, U_new, sigma_new, nu_new, sprime_new = solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, z_bar, X, U, X_last, U_last, sigma_last, sigma_last, params)
+            X_new, U_new, sigma_new, nu_new, sprime_new = solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, z_bar, X_last, U_last, sigma_last, params)
             
             X_nl = integrate_nonlinear_piecewise(X_new, U_new, sigma_new, params)
             linear_cost_dynamics = norm(nu_new,1)

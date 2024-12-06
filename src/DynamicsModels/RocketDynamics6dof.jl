@@ -30,47 +30,26 @@ function dynamics6dof(x::AbstractVector, u::AbstractVector, params::Dict) :: Abs
     FIx, FIy, FIz = quaternion_to_rotation_matrix(q0, q1, q2, q3)' * [TBx; TBy; TBz]
     MBx, MBy, MBz = skew_symmetric3d(rTB) * [TBx; TBy; TBz]
 
-    # # Thrust force in body frame
-    # Fbx, Fby, Fbz = u[1:3]
-    # # Thrust moment in body frame
-    # Mbx, Mby, Mbz = u[4:6]
-
     # Parameters
     g_inertial = params["gravity_vector"]  # Gravitational acceleration vector [gx, gy, gz]
     g0 = params["standard_gravity"]        # Standard gravity (9.80665 m/s²)
     I_sp = params["I_sp"]                  # Specific impulse (s)
     I_body = hcat(params["inertia_matrix"]...)    # Inertia matrix in body frame (3x3)
 
-    # Normalize quaternion to avoid drift
-    # q_norm = sqrt(q0^2 + q1^2 + q2^2 + q3^2)
-    # q0, q1, q2, q3 = q0 / q_norm, q1 / q_norm, q2 / q_norm, q3 / q_norm
-
     # Compute rotation matrix from body to inertial frame
     R_b_to_i = quaternion_to_rotation_matrix(q0, q1, q2, q3)
 
     # Translational dynamics
     dr = [vx, vy, vz]  
-    # F_b = [Fbx, Fby, Fbz]
-    # dv = (1 / m) * (R_b_to_i * F_b) + g_inertial
     dv = (1 / m) * [FIx; FIy; FIz] + g_inertial # TODO: check this
-
     # Rotational dynamics
     q = [q0, q1, q2, q3]
     ω_b = [ωx, ωy, ωz]
-    # dq = 0.5 * quaternion_product(q, [0.0; ω_b])
     dq = 0.5 * skew_symmetric4d(ω_b) * q  
     # Angular velocity derivative
     M_b = [MBx, MBy, MBz]
-    # dω = I_body \ (M_b - cross(ω_b, I_body * ω_b))
-    #dω = I_body \ (M_b - skew_symmetric3d(ω_b) * I_body * ω_b) #TODO: check this
     dω = inv(I_body) * (skew_symmetric3d(rTB) * [TBx; TBy; TBz]) - skew_symmetric3d(ω_b) * ω_b
-    # Mass dynamics
-    # F_b_magnitude = norm(F_b)
-    # dm = -F_b_magnitude / (g0 * I_sp)
     mag_TB = norm([TBx; TBy; TBz])
-    #mag_TB = sqrt(TBx^2 + TBy^2 + TBz^2)
-    #dm = -mag_TB / (g0 * I_sp)   # TODO check this
-    #alpha_m = 1 / (282 * 9.81)
     dm = -params["alpha_m"] * mag_TB
     # Concatenate derivatives
     dx = vcat(dm, dr, dv, dq, dω)
@@ -234,47 +213,8 @@ function calculate_discretization(X::AbstractMatrix{T}, U::AbstractMatrix{T}, si
 
     for k in 1:K-1
         #set initial augmented state
-        #println("Calculating discretization for time step: ", k)
         V0[x_index] = X[:, k]
         # define ODE function
-        # inputs vector to store derivatives, current state vec, params, current time
-        # function f!(dVdt, V, p, t)
-        #     # extract variables from V
-        #     xk = V[x_index]
-        #     Phi = reshape(V[A_bar_indices], n_x, n_x)
-        #     B_bar_V = reshape(V[B_bar_indices], n_x, n_u)
-        #     C_bar_V = reshape(V[C_bar_indices], n_x, n_u)
-        #     S_bar_V = V[S_bar_indices]
-        #     z_bar_V = V[z_bar_indices]
-
-        #     # interpolate control input
-        #     alpha = t / dt
-        #     u = (1 - alpha) * U[:, k] + alpha * U[:, k+1]
-
-        #     # compute dynamics and jacobian
-        #     f = dynamics6dof(xk, u, params)
-        #     A = state_jacobian6dof(xk, u, params)
-        #     B = control_jacobian6dof(xk, u, params)
-
-        #     # compute derivatives
-        #     dxdt = f  
-        #     dPhidt = A * Phi
-        #     dB_bar_dt = A * B_bar_V + B
-        #     dC_bar_dt = A * C_bar_V
-        #     dS_bar_dt = A * S_bar_V
-        #     dz_bar_dt = A * z_bar_V + f
-
-        #     # pack derivatives into dVdt
-        #     dVdt = zeros(V0_length)
-        #     dVdt[x_index] = dxdt
-        #     dVdt[A_bar_indices] = vec(dPhidt)
-        #     dVdt[B_bar_indices] = vec(dB_bar_dt)
-        #     dVdt[C_bar_indices] = vec(dC_bar_dt)
-        #     dVdt[S_bar_indices] = dS_bar_dt
-        #     dVdt[z_bar_indices] = dz_bar_dt
-
-        #     return nothing
-        # end
         function f!(dVdt, V, sigma, t)
             alpha = (dt - t) / dt
             beta = t / dt

@@ -7,9 +7,8 @@ using Gurobi
 using LinearAlgebra
 using ..MainModule
 using ForwardDiff
-#using ..AbstractDynamicsModel
-# include("../DynamicsModels/AbstractDynamicsModel.jl")
-# using .AbstractDynamicsModel
+using ECOS
+using Ipopt
 
 """
     solve_convex_subproblem(A_list, B_list, x_ref, u_ref, params) -> (Array, Array)
@@ -17,116 +16,127 @@ using ForwardDiff
 Solves the convex subproblem in the Scvx algorithm using Gurobi.
 
 # Arguments
-- `A_list::Vector{Matrix}`: List of state Jacobian matrices at each time step.
-- `B_list::Vector{Matrix}`: List of control Jacobian matrices at each time step.
-- `x_ref::Array`: Reference state trajectory (N x n_states).
-- `u_ref::Array`: Reference control trajectory (N-1 x n_controls).
-- `params::Dict`: Dictionary containing problem parameters.
+- A_bar::Array: A matrix.
+- B_bar::Array: B matrix.
+- C_bar::Array: C matrix.
+- S_bar::Array: S matrix.
+- Z_bar::Array: Z matrix.
+- X::Array: State trajectory.
+- U::Array: Control trajectory.
+- X_last::Array: Last state trajectory.
+- U_last::Array: Last control trajectory.
+- sig::Float64: Time guess.
+- sigma_last::Float64: Last time Guess.
 
 # Returns
 - `(x_opt::Array, u_opt::Array)`: Optimized state and control trajectories.
+- `sigma_new::Float64`: Optimized time.
+- `nu_new::Array`: Optimized virtual control variables.
+- `sprime_new::Float64`: Optimized slack variable.
 """
-function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vector{<:AbstractMatrix}, x_ref::AbstractArray, u_ref::AbstractArray, params::Dict)
+function solve_convex_subproblem(A_bar, B_bar, C_bar, S_bar, Z_bar, X_last, U_last, sigma_last, params::Dict)
     N = params["N"]
     n_states = params["n_states"]
     n_controls = params["n_controls"]
-    dt = params["dt"]
+    T_max = params["T_max"]
     m_dry = params["m_dry"]
+    T_min = params["T_min"]
+    omega_max = params["rad_omega_max"]
+    tan_gamma_gs = params["tan_gamma_gs"]
+    cos_theta_max = params["cos_theta_max"]
+    tan_delta_max = params["tan_delta_max"]
 
-    # Create a JuMP model with Gurobi optimizer
-    model = Model(Gurobi.Optimizer)
-
-    # Suppress output from the solver (optional)
-    set_silent(model)
-
-    # Define decision variables
-    @variable(model, x[1:N, 1:n_states])
-    @variable(model, u[1:N-1, 1:n_controls])
-
-    # Initial condition constraint
-    @constraint(model, x[1, :] .== params["x0"])
-
-    # final position constraint
-    @constraint(model, x[N, 1:3] .== params["rf"])
-
-    # final velocity constraint
-    @constraint(model, x[N, 4:6] .== params["vf"])
-
-    # final quaternion constraint
-    @constraint(model, x[N, 7:10] .== params["qf"])
-
-    # final angular velocity constraint
-    @constraint(model, x[N, 11:13] .== params["omegaf"])
-    # Dynamics constraints
-    for k in 1:N-1
-        A = A_list[k]
-        B = B_list[k]
-        xk_ref = x_ref[k, :]
-        uk_ref = u_ref[k, :]
-        fk = dynamics_residual(xk_ref, uk_ref, params)
-
-        @constraint(model, x[k+1, :] .== x[k, :] + dt * (A * (x[k, :] - xk_ref) + B * (u[k, :] - uk_ref) + fk))
-    end
-
-    # Objective function
-    @expression(model, obj, 0)
-    for k in 1:N-1
-        @expression(model, obj += (x[k, :] - x_ref[k, :])' * Q * (x[k, :] - x_ref[k, :]) + (u[k, :] - u_ref[k, :])' * R * (u[k, :] - u_ref[k, :]))
-    end
-    # Terminal cost
-    @expression(model, obj += (x[N, :] - x_ref[N, :])' * QN * (x[N, :] - x_ref[N, :]))
-
-    @objective(model, Min, obj)
-
-    # Control constraints (if any) #TODO: convexify
-    # if haskey(params, "u_min") && haskey(params, "u_max")
-    #     u_min = params["u_min"]
-    #     u_max = params["u_max"]
-    #     @constraint(model, [k=1:N-1, j=1:n_controls], u_min[j] <= u[k, j] <= u_max[j])
-    # end
-
-    # State constraints (if any)
-    # mass constraint - mass must stay above dry mass
-    mass_index = params["mass_index"]
-    # @constraint(model, [k=1:N], x[k, mass_index] >= m_dry)  # Altitude constraint
-    for k in 1:N
-        @constraint(model, x[k, mass_index] >= m_dry)  # Altitude constraint
-    end
-    #TODO: implement thrust constraint
-    #TODO: implement tilt constraint
-
-    #TODO: implememt glide slope constraint
-    e1 = [1.0, 0.0, 0.0]
-    e2 = [0.0, 1.0, 0.0]
-    e3 = [0.0, 0.0, 1.0]
-    H23 = [1.0 0.0 0.0; 0.0 1.0 0.0]
-   # gamma_gs = params["gamma_gs"] 
-    gamma_gs = deg2rad(20)#TODO: parameterize
-    tan_gamma_gs = tan(gamma_gs)
-    # add glide slope constraint as second order cone constraint
-    # @variable(model, t[1:N] >=0)
-
-    # for k in 1:N
-    #     x_k = x[k, 1]
-    #     y_k = x[k, 2]
-    #     z_k = x[k, 3]
-    #     r_k = [x_k; y_k; z_k]
-    #     @constraint(model, [t[k], x_k, y_k] in SecondOrderCone())
-    #     @constraint(model, z_k >= tan_gamma_gs * t[k])
-    # end
     
-    # #TODO: implement angular velo constraint
-    # params["omega_max"] = deg2rad(90) #TODO: parameterize
-    # @variable(model, t_omega[1:N] >=0)
-    # for k in 1:N
-    #     omega_x_k = x[k, 11]
-    #     omega_y_k = x[k, 12]
-    #     omega_z_k = x[k, 13]
-    #     @constraint(model, [t_omega[k], omega_x_k, omega_y_k, omega_z_k] in SecondOrderCone())
-    #     @constraint(model, t_omega[k] <= params["omega_max"])
-    # end
+    model = Model(Gurobi.Optimizer)
+    set_silent(model)
+    # define decision variables: state, control, nu, sigma 
+    @variable(model, x[1:n_states, 1:N])
+    @variable(model, u[1:n_controls, 1:N])
+    @variable(model, nu[1:n_states, 1:N-1])
+    @variable(model, sigma >=0)
+    @variable(model, s_prime[1:N]>=0)
 
-    # Solve the optimization problem
+    # ------------------- Constraints --------------------------- #
+    # ------------------- BOUNDARY CONDITIONS ------------------- #
+    @constraint(model, x[:, 1] .== params["x0"])
+    # final position constraint
+    @constraint(model, x[2:end, N] .== params["xf"][2:end])
+    # ------------------- STATE CONSTRAINTS ---------------------- #
+    # MIN  MASS CONSTRAINT
+    @constraint(model, x[1, :] .>= params["m_dry"])
+
+    # GLIDESLOPE CONSTRAINT
+    # auxilarry variable t 
+    @variable(model, t_k[1:N]>=0)
+    for k in 1:N 
+        @constraint(model, t_k[k] == x[4,k] / tan_gamma_gs)
+        @constraint(model, [t_k[k]; x[2,k]; x[3,k]] in SecondOrderCone())
+    end
+    # TILT ANGLE CONSTRAINT
+    c = sqrt((1 - cos_theta_max) / 2)
+    for k in 1:N
+        @constraint(model, [c; x[10,k]; x[11,k]] in SecondOrderCone())
+    end
+    # MAX ANGULAR VELOCITY CONSTRAINT
+    for k in 1:N
+        @constraint(model, [omega_max; x[12,k]; x[13,k]; x[14,k]] in SecondOrderCone())
+    end
+    # ------------------- CONTROL CONSTRAINTS -------------------- #
+    # THRUST UPPER BOUND
+    for k in 1:N
+        @constraint(model, [T_max; u[:,k]] in SecondOrderCone())
+    end
+    # LOWER THRUST BOUND TODO: kinda sus, check this
+    eps = 1e-6 
+    u_last_p_unit = zeros(n_controls, N)
+    for k in 1:N
+        u_last_p_k = U_last[:, k]
+        norm_u_last_p_k = norm(u_last_p_k) + eps
+        u_last_p_unit[:, k] = u_last_p_k / norm_u_last_p_k
+    end
+    for k in 1:N
+        lhs_k = sum(u_last_p_unit[:, k] .* u[:, k])  # scalar projecton
+        @constraint(model, T_min - lhs_k <= s_prime[k])
+    end
+    # GIMBAL ANGLE CONSTRAINT
+    @variable(model, t_u[1:N]>=0) # aux var 
+    for k in 1:N
+        @constraint(model, t_u[k] == 2*tan_delta_max * u[3, k])
+        @constraint(model, [t_u[k]; u[1:2,k]] in SecondOrderCone())
+    end
+    
+    # ------------------- DYNAMICS CONSTRAINTS ------------------- #
+    for k in 1:N-1
+        @constraint(model, x[:, k+1] .== 
+        reshape(A_bar[:, k], n_states, n_states) * x[:, k] 
+        + reshape(B_bar[:, k], n_states, n_controls) * u[:, k] 
+        + reshape(C_bar[:, k], n_states, n_controls) * u[:, k+1]
+        + S_bar[:, k] * sigma
+        + Z_bar[:, k]
+        + nu[:, k])
+    end
+    # ------------------- TRUST REGION -------------------------- #
+    du = u - U_last
+    dx = x - X_last
+    ds = sigma - sigma_last 
+    # TRUST REGION CONSTRAINT
+    @constraint(model, [params["tr_radius"]; vec(dx); vec(du); ds] in SecondOrderCone())
+    # ------------------- OBJECTIVE FUNCTION --------------------- #
+    @variable(model, nu_abs[1:n_states, 1:N-1] >=0)
+    for i in 1:n_states
+        for k in 1:N-1
+            @constraint(model, nu_abs[i,k] >= nu[i,k])
+            @constraint(model, nu_abs[i,k] >= -nu[i,k])
+        end
+    end
+    norm_nu = sum(nu_abs)
+    sum_s_prime = sum(s_prime)
+    @objective(model, Min, 
+        params["weight_sigma"] * sigma +
+        params["weight_nu"] * norm_nu +
+        1e5 * sum_s_prime
+    )
+
     optimize!(model)
 
     # Check for solver convergence
@@ -136,29 +146,22 @@ function solve_convex_subproblem(A_list::Vector{<:AbstractMatrix}, B_list::Vecto
     end
 
     # Extract optimized trajectories
-    x_opt = Array{Float64}(undef, N, n_states)
-    u_opt = Array{Float64}(undef, N-1, n_controls)
+    x_opt = Array{Float64}(undef, n_states, N)
+    u_opt = Array{Float64}(undef, n_controls, N)
     for k in 1:N
-        x_opt[k, :] = value.(x[k, :])
+        x_opt[:, k] = value.(x[:, k])
     end
+    for k in 1:N
+        u_opt[:, k] = value.(u[:, k])
+    end
+    sigma_new = value(sigma)
+    nu_new = Array{Float64}(undef, n_states, N-1)
     for k in 1:N-1
-        u_opt[k, :] = value.(u[k, :])
+        nu_new[:, k] = value.(nu[:, k])
     end
 
-    return x_opt, u_opt
+    sprime_new = sum(value.(s_prime))
+    return x_opt, u_opt, sigma_new, nu_new, sprime_new  
 end
-
-# Helper function to compute the dynamics residual
-function dynamics_residual(xk::AbstractVector, uk::AbstractVector, params::Dict) :: AbstractVector
-    f = dynamics6dof(xk, uk, params)
-    # TODO: replace forward diffs with jacobian functions
-    # A = ForwardDiff.jacobian(x_state -> dynamics6dof(x_state, uk, params), xk)
-    # B = ForwardDiff.jacobian(u_state -> dynamics6dof(xk, u_state, params), uk)
-    A = state_jacobian6dof(xk, uk, params)
-    B = control_jacobian6dof(xk, uk, params)
-    residual = f - A * xk - B * uk
-    return residual
-end
-
 
 end # module ConvexSubproblemSolver
